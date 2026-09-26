@@ -18,17 +18,17 @@ const project: Project = {
 // ── Rooms ────────────────────────────────────────────────────
 
 const rooms: Room[] = [
-  { id: 'lift-lobby', name: 'Private Lift Lobby', areaSqm: 5.5, status: 'Planning', progress: 15, hue: 30, notes: 'Feature wall and shoe cabinet planned.' },
-  { id: 'living', name: 'Living Room', areaSqm: 28, status: 'In progress', progress: 45, hue: 38, notes: 'Hacking of false ceiling done; electrical points next.' },
-  { id: 'dining', name: 'Dining Room', areaSqm: 14, status: 'In progress', progress: 40, hue: 24, notes: 'Pendant light position to be confirmed.' },
-  { id: 'dry-kitchen', name: 'Dry Kitchen', areaSqm: 9, status: 'Planning', progress: 20, hue: 200, notes: 'Island counter quartz sample selected.' },
-  { id: 'wet-kitchen', name: 'Wet Kitchen', includes: 'WC', areaSqm: 10.5, status: 'In progress', progress: 35, hue: 190, notes: 'Hob and hood model shortlisted.' },
-  { id: 'balcony', name: 'Balcony', areaSqm: 8, status: 'Not started', progress: 0, hue: 110, notes: 'Outdoor tiles and planter idea.' },
-  { id: 'master', name: 'Master Bedroom', includes: 'Master Bath', areaSqm: 24, status: 'In progress', progress: 55, hue: 260, notes: 'Walk-in wardrobe carpentry in fabrication.' },
-  { id: 'bedroom-2', name: 'Bedroom 2', areaSqm: 11, status: 'Planning', progress: 10, hue: 280, notes: 'Study nook with built-in desk.' },
-  { id: 'bedroom-3', name: 'Bedroom 3', includes: 'Bath 3', areaSqm: 13.5, status: 'Planning', progress: 10, hue: 300, notes: 'Guest room layout.' },
-  { id: 'junior-master', name: 'Junior Master', includes: 'Junior Master Bath', areaSqm: 17, status: 'In progress', progress: 30, hue: 240, notes: 'Wardrobe drawings approved.' },
-  { id: 'yard', name: 'Yard', areaSqm: 4, status: 'Not started', progress: 0, hue: 90, notes: 'Retractable laundry rack.' },
+  { id: 'lift-lobby', name: 'Private Lift Lobby', areaSqm: 5.5, status: 'Planning', progress: 15, budget: 5000, hue: 30, notes: 'Feature wall and shoe cabinet planned.' },
+  { id: 'living', name: 'Living Room', areaSqm: 28, status: 'In progress', progress: 45, budget: 18000, hue: 38, notes: 'Hacking of false ceiling done; electrical points next.' },
+  { id: 'dining', name: 'Dining Room', areaSqm: 14, status: 'In progress', progress: 40, budget: 8000, hue: 24, notes: 'Pendant light position to be confirmed.' },
+  { id: 'dry-kitchen', name: 'Dry Kitchen', areaSqm: 9, status: 'Planning', progress: 20, budget: 15000, hue: 200, notes: 'Island counter quartz sample selected.' },
+  { id: 'wet-kitchen', name: 'Wet Kitchen', includes: 'WC', areaSqm: 10.5, status: 'In progress', progress: 35, budget: 12000, hue: 190, notes: 'Hob and hood model shortlisted.' },
+  { id: 'balcony', name: 'Balcony', areaSqm: 8, status: 'Not started', progress: 0, budget: 3000, hue: 110, notes: 'Outdoor tiles and planter idea.' },
+  { id: 'master', name: 'Master Bedroom', includes: 'Master Bath', areaSqm: 24, status: 'In progress', progress: 55, budget: 25000, hue: 260, notes: 'Walk-in wardrobe carpentry in fabrication.' },
+  { id: 'bedroom-2', name: 'Bedroom 2', areaSqm: 11, status: 'Planning', progress: 10, budget: 6000, hue: 280, notes: 'Study nook with built-in desk.' },
+  { id: 'bedroom-3', name: 'Bedroom 3', includes: 'Bath 3', areaSqm: 13.5, status: 'Planning', progress: 10, budget: 6000, hue: 300, notes: 'Guest room layout.' },
+  { id: 'junior-master', name: 'Junior Master', includes: 'Junior Master Bath', areaSqm: 17, status: 'In progress', progress: 30, budget: 10000, hue: 240, notes: 'Wardrobe drawings approved.' },
+  { id: 'yard', name: 'Yard', areaSqm: 4, status: 'Not started', progress: 0, budget: 1500, hue: 90, notes: 'Retractable laundry rack.' },
   { id: 'power-room', name: 'Power Room', areaSqm: 3, status: 'Completed', progress: 100, hue: 50, notes: 'DB box access checked.' },
   { id: 'utility', name: 'Utility', areaSqm: 4.5, status: 'Not started', progress: 0, hue: 150, notes: 'Could become helper room or storage.' },
   { id: 'store', name: 'Store', areaSqm: 3.5, status: 'Completed', progress: 100, hue: 15, notes: 'Shelving installed.' },
@@ -37,28 +37,61 @@ const rooms: Room[] = [
 // ── Measurements (millimetres) ───────────────────────────────
 
 const measurements: Measurement[] = [
-  { id: 'm1', roomId: 'lift-lobby', item: 'Floor area', widthMm: 2100, depthMm: 2600 },
-  { id: 'm2', roomId: 'lift-lobby', item: 'Shoe cabinet wall', widthMm: 1800, heightMm: 2700 },
-  { id: 'm3', roomId: 'living', item: 'Floor area', widthMm: 4800, depthMm: 5800 },
-  { id: 'm4', roomId: 'living', item: 'TV feature wall', widthMm: 3600, heightMm: 2800, note: 'Allow 150 mm for concealed trunking' },
-  { id: 'm5', roomId: 'living', item: 'Sliding door to balcony', widthMm: 3200, heightMm: 2400 },
-  { id: 'm6', roomId: 'dining', item: 'Floor area', widthMm: 3500, depthMm: 4000 },
-  { id: 'm7', roomId: 'dining', item: 'Ceiling height', heightMm: 2800 },
-  { id: 'm8', roomId: 'dry-kitchen', item: 'Island counter', widthMm: 2200, depthMm: 900, heightMm: 900 },
-  { id: 'm9', roomId: 'wet-kitchen', item: 'Counter run', widthMm: 3000, depthMm: 600 },
-  { id: 'm10', roomId: 'wet-kitchen', item: 'WC floor', widthMm: 1200, depthMm: 1500 },
-  { id: 'm11', roomId: 'balcony', item: 'Floor area', widthMm: 4000, depthMm: 2000 },
-  { id: 'm12', roomId: 'master', item: 'Floor area', widthMm: 4200, depthMm: 4600 },
-  { id: 'm13', roomId: 'master', item: 'Wardrobe wall', widthMm: 3000, heightMm: 2700 },
-  { id: 'm14', roomId: 'master', item: 'Master Bath vanity', widthMm: 1500, depthMm: 550 },
-  { id: 'm15', roomId: 'bedroom-2', item: 'Floor area', widthMm: 3000, depthMm: 3500 },
-  { id: 'm16', roomId: 'bedroom-2', item: 'Window', widthMm: 1800, heightMm: 1500 },
-  { id: 'm17', roomId: 'bedroom-3', item: 'Floor area', widthMm: 3200, depthMm: 3800 },
-  { id: 'm18', roomId: 'junior-master', item: 'Floor area', widthMm: 3600, depthMm: 4200 },
-  { id: 'm19', roomId: 'yard', item: 'Floor area', widthMm: 1600, depthMm: 2400 },
-  { id: 'm20', roomId: 'utility', item: 'Floor area', widthMm: 1800, depthMm: 2400 },
-  { id: 'm21', roomId: 'store', item: 'Floor area', widthMm: 1500, depthMm: 2300 },
-  { id: 'm22', roomId: 'power-room', item: 'Floor area', widthMm: 1200, depthMm: 2400 },
+  // Dining Room – a complete example
+  { id: 'm-din-w', roomId: 'dining', kind: 'roomWidth', item: 'Room width', widthMm: 3500 },
+  { id: 'm-din-l', roomId: 'dining', kind: 'roomLength', item: 'Room length', depthMm: 4000 },
+  { id: 'm-din-c', roomId: 'dining', kind: 'ceilingHeight', item: 'Ceiling height', heightMm: 2800 },
+  { id: 'm-din-w1', roomId: 'dining', kind: 'wall', item: 'Feature wall (sideboard)', widthMm: 3500, heightMm: 2800, note: 'Power point at 300 mm for sideboard lamp' },
+  { id: 'm-din-w2', roomId: 'dining', kind: 'wall', item: 'Wall facing kitchen', widthMm: 4000, heightMm: 2800 },
+  { id: 'm-din-d1', roomId: 'dining', kind: 'door', item: 'Opening to dry kitchen', widthMm: 900, heightMm: 2100 },
+  { id: 'm-din-win', roomId: 'dining', kind: 'window', item: 'Main window', widthMm: 1800, heightMm: 1500, sillMm: 900, note: 'Curtain track needs 150 mm each side' },
+  { id: 'm-din-o1', roomId: 'dining', kind: 'other', item: 'Pendant light point (from wall A)', widthMm: 1750, depthMm: 2000 },
+
+  { id: 'm-lob-w', roomId: 'lift-lobby', kind: 'roomWidth', item: 'Room width', widthMm: 2100 },
+  { id: 'm-lob-l', roomId: 'lift-lobby', kind: 'roomLength', item: 'Room length', depthMm: 2600 },
+  { id: 'm-lob-w1', roomId: 'lift-lobby', kind: 'wall', item: 'Shoe cabinet wall', widthMm: 1800, heightMm: 2700 },
+  { id: 'm-lob-d1', roomId: 'lift-lobby', kind: 'door', item: 'Main door', widthMm: 1050, heightMm: 2400 },
+
+  { id: 'm-liv-w', roomId: 'living', kind: 'roomWidth', item: 'Room width', widthMm: 4800 },
+  { id: 'm-liv-l', roomId: 'living', kind: 'roomLength', item: 'Room length', depthMm: 5800 },
+  { id: 'm-liv-c', roomId: 'living', kind: 'ceilingHeight', item: 'Ceiling height', heightMm: 2800 },
+  { id: 'm-liv-w1', roomId: 'living', kind: 'wall', item: 'TV feature wall', widthMm: 3600, heightMm: 2800, note: 'Allow 150 mm for concealed trunking' },
+  { id: 'm-liv-d1', roomId: 'living', kind: 'door', item: 'Sliding door to balcony', widthMm: 3200, heightMm: 2400 },
+
+  { id: 'm-dk-w', roomId: 'dry-kitchen', kind: 'roomWidth', item: 'Room width', widthMm: 2800 },
+  { id: 'm-dk-l', roomId: 'dry-kitchen', kind: 'roomLength', item: 'Room length', depthMm: 3200 },
+  { id: 'm-dk-o1', roomId: 'dry-kitchen', kind: 'other', item: 'Island counter', widthMm: 2200, depthMm: 900, heightMm: 900 },
+
+  { id: 'm-wk-w', roomId: 'wet-kitchen', kind: 'roomWidth', item: 'Room width', widthMm: 2400 },
+  { id: 'm-wk-l', roomId: 'wet-kitchen', kind: 'roomLength', item: 'Room length', depthMm: 3000 },
+  { id: 'm-wk-o1', roomId: 'wet-kitchen', kind: 'other', item: 'Counter run', widthMm: 3000, depthMm: 600 },
+  { id: 'm-wk-o2', roomId: 'wet-kitchen', kind: 'other', item: 'WC floor', widthMm: 1200, depthMm: 1500 },
+
+  { id: 'm-bal-w', roomId: 'balcony', kind: 'roomWidth', item: 'Room width', widthMm: 4000 },
+  { id: 'm-bal-l', roomId: 'balcony', kind: 'roomLength', item: 'Room length', depthMm: 2000 },
+
+  { id: 'm-mas-w', roomId: 'master', kind: 'roomWidth', item: 'Room width', widthMm: 4200 },
+  { id: 'm-mas-l', roomId: 'master', kind: 'roomLength', item: 'Room length', depthMm: 4600 },
+  { id: 'm-mas-c', roomId: 'master', kind: 'ceilingHeight', item: 'Ceiling height', heightMm: 2700 },
+  { id: 'm-mas-w1', roomId: 'master', kind: 'wall', item: 'Wardrobe wall', widthMm: 3000, heightMm: 2700 },
+  { id: 'm-mas-o1', roomId: 'master', kind: 'other', item: 'Master Bath vanity', widthMm: 1500, depthMm: 550 },
+
+  { id: 'm-b2-w', roomId: 'bedroom-2', kind: 'roomWidth', item: 'Room width', widthMm: 3000 },
+  { id: 'm-b2-l', roomId: 'bedroom-2', kind: 'roomLength', item: 'Room length', depthMm: 3500 },
+  { id: 'm-b2-win', roomId: 'bedroom-2', kind: 'window', item: 'Window', widthMm: 1800, heightMm: 1500, sillMm: 800 },
+
+  { id: 'm-b3-w', roomId: 'bedroom-3', kind: 'roomWidth', item: 'Room width', widthMm: 3200 },
+  { id: 'm-b3-l', roomId: 'bedroom-3', kind: 'roomLength', item: 'Room length', depthMm: 3800 },
+  { id: 'm-jm-w', roomId: 'junior-master', kind: 'roomWidth', item: 'Room width', widthMm: 3600 },
+  { id: 'm-jm-l', roomId: 'junior-master', kind: 'roomLength', item: 'Room length', depthMm: 4200 },
+  { id: 'm-yard-w', roomId: 'yard', kind: 'roomWidth', item: 'Room width', widthMm: 1600 },
+  { id: 'm-yard-l', roomId: 'yard', kind: 'roomLength', item: 'Room length', depthMm: 2400 },
+  { id: 'm-ut-w', roomId: 'utility', kind: 'roomWidth', item: 'Room width', widthMm: 1800 },
+  { id: 'm-ut-l', roomId: 'utility', kind: 'roomLength', item: 'Room length', depthMm: 2400 },
+  { id: 'm-st-w', roomId: 'store', kind: 'roomWidth', item: 'Room width', widthMm: 1500 },
+  { id: 'm-st-l', roomId: 'store', kind: 'roomLength', item: 'Room length', depthMm: 2300 },
+  { id: 'm-pr-w', roomId: 'power-room', kind: 'roomWidth', item: 'Room width', widthMm: 1200 },
+  { id: 'm-pr-l', roomId: 'power-room', kind: 'roomLength', item: 'Room length', depthMm: 2400 },
 ];
 
 // ── Photos ───────────────────────────────────────────────────
@@ -99,14 +132,14 @@ const budgetCategories: BudgetCategory[] = [
 ];
 
 const expenses: Expense[] = [
-  { id: 'e1', date: '2026-09-22', description: 'Master wardrobe – 2nd payment', categoryId: 'carpentry', vendor: 'Oak & Stone Carpentry', amount: 7500 },
+  { id: 'e1', date: '2026-09-22', description: 'Master wardrobe – 2nd payment', categoryId: 'carpentry', vendor: 'Oak & Stone Carpentry', amount: 7500, roomId: 'master' },
   { id: 'e2', date: '2026-09-18', description: 'Wiring & new power points', categoryId: 'electrical', vendor: 'BrightSpark Electrical', amount: 3200 },
-  { id: 'e3', date: '2026-09-15', description: 'Hob & hood deposit', categoryId: 'kitchen', vendor: 'KitchenPro SG', amount: 3500 },
+  { id: 'e3', date: '2026-09-15', description: 'Hob & hood deposit', categoryId: 'kitchen', vendor: 'KitchenPro SG', amount: 3500, roomId: 'wet-kitchen' },
   { id: 'e4', date: '2026-09-10', description: 'Vinyl flooring deposit', categoryId: 'flooring', vendor: 'FloorCraft', amount: 4800 },
   { id: 'e5', date: '2026-09-05', description: 'Carpentry deposit (30%)', categoryId: 'carpentry', vendor: 'Oak & Stone Carpentry', amount: 15000 },
-  { id: 'e6', date: '2026-09-02', description: 'Lighting fixtures', categoryId: 'electrical', vendor: 'Lumière Lighting', amount: 3000 },
-  { id: 'e7', date: '2026-08-30', description: 'Master Bath fittings', categoryId: 'bath', vendor: 'BathHaus', amount: 1800 },
-  { id: 'e8', date: '2026-08-25', description: 'Dining chairs (4)', categoryId: 'furniture', vendor: 'Nordic Living', amount: 2400 },
+  { id: 'e6', date: '2026-09-02', description: 'Lighting fixtures', categoryId: 'electrical', vendor: 'Lumière Lighting', amount: 3000, roomId: 'living' },
+  { id: 'e7', date: '2026-08-30', description: 'Master Bath fittings', categoryId: 'bath', vendor: 'BathHaus', amount: 1800, roomId: 'master' },
+  { id: 'e8', date: '2026-08-25', description: 'Dining chairs (4)', categoryId: 'furniture', vendor: 'Nordic Living', amount: 2400, roomId: 'dining' },
 ];
 
 // ── Upcoming tasks (shown on Home) ───────────────────────────

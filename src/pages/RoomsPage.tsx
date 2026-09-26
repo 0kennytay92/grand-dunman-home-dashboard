@@ -1,20 +1,23 @@
 import { useState } from 'react';
 import { useStore } from '../data/store';
+import { roomArea } from '../data/measurementKinds';
 import type { RoomStatus } from '../data/types';
 import { area } from '../format';
 import { href } from '../router';
 import { AddButton } from '../components/forms';
 import { RoomEditor } from '../editors/RoomEditor';
+import { PhotoThumb } from '../components/PhotoThumb';
 import { Badge, Chips, EmptyState, PageHeader, PhotoPlaceholder, ProgressBar, statusTone } from '../components/ui';
 
 const filters = ['All', 'Not started', 'Planning', 'In progress', 'Completed'] as const;
 
 export function RoomsPage() {
-  const { rooms } = useStore().data;
+  const { rooms, measurements, photos } = useStore().data;
+  const coverPhoto = (roomId: string) => photos.filter((p) => p.roomId === roomId && p.hasImage).sort((a, b) => b.date.localeCompare(a.date))[0];
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const [adding, setAdding] = useState(false);
   const shown = filter === 'All' ? rooms : rooms.filter((r) => r.status === (filter as RoomStatus));
-  const totalArea = rooms.reduce((s, r) => s + r.areaSqm, 0);
+  const totalArea = rooms.reduce((s, r) => s + roomArea(r, measurements), 0);
 
   return (
     <>
@@ -32,12 +35,15 @@ export function RoomsPage() {
         <div className="room-grid">
           {shown.map((r) => (
             <a key={r.id} href={href(`/rooms/${r.id}`)} className="room-card">
-              <PhotoPlaceholder roomId={r.id} />
+              {(() => {
+                const cover = coverPhoto(r.id);
+                return cover ? <PhotoThumb photo={cover} /> : <PhotoPlaceholder roomId={r.id} />;
+              })()}
               <div className="room-card-body">
                 <div className="room-card-top">
                   <div>
                     <h3>{r.name}</h3>
-                    <p className="row-sub">{[r.includes && `with ${r.includes}`, area(r.areaSqm)].filter(Boolean).join(' · ') || ' '}</p>
+                    <p className="row-sub">{[r.includes && `with ${r.includes}`, area(roomArea(r, measurements))].filter(Boolean).join(' · ') || ' '}</p>
                   </div>
                   <Badge tone={statusTone[r.status]}>{r.status}</Badge>
                 </div>

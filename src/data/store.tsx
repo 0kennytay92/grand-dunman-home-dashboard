@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { sampleData } from './sampleData';
 import type { AppData, Project } from './types';
+import { upgradeMeasurements } from './measurementKinds';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
 // ─────────────────────────────────────────────────────────────
@@ -42,6 +43,7 @@ export function parseData(raw: unknown): AppData {
     if (list !== undefined && !Array.isArray(list)) throw new Error(`"${k}" in this file is not a list.`);
     (data[k] as unknown[]) = list ?? [];
   }
+  data.measurements = upgradeMeasurements(data.measurements);
   return data;
 }
 
@@ -125,6 +127,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.photos = d.photos.filter((p) => p.roomId !== id);
         next.designs = d.designs.filter((x) => x.roomId !== id);
         next.tasks = d.tasks.map((t) => (t.roomId === id ? { ...t, roomId: undefined } : t));
+        next.expenses = d.expenses.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x)); // payments are kept
+
       }
       return next;
     });

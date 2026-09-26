@@ -9,17 +9,23 @@ export interface Room {
   areaSqm: number; // 0 = not measured yet
   status: RoomStatus;
   progress: number; // 0–100
+  budget?: number; // planned spend for this room, in S$
   hue: number; // colour used for the room's placeholder artwork
   notes: string;
 }
 
+/** What kind of thing was measured. See measurementKinds.ts for the details of each. */
+export type MeasurementKind = 'roomWidth' | 'roomLength' | 'ceilingHeight' | 'wall' | 'door' | 'window' | 'other';
+
 export interface Measurement {
   id: string;
   roomId: string;
-  item: string;
-  widthMm?: number;
-  depthMm?: number;
-  heightMm?: number;
+  kind: MeasurementKind;
+  item: string; // name, e.g. "TV feature wall"
+  widthMm?: number; // room width is stored here
+  depthMm?: number; // room length is stored here
+  heightMm?: number; // ceiling height is stored here
+  sillMm?: number; // windows: height of the window's bottom edge above the floor
   note?: string;
 }
 
@@ -60,6 +66,7 @@ export interface Expense {
   categoryId: string;
   vendor: string;
   amount: number;
+  roomId?: string; // which room this was for (blank = whole home)
 }
 
 export interface Task {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DoorOpen, ListChecks, Wallet, ChevronRight, Gauge, Plus } from 'lucide-react';
 import { useBudgetTotals, useRoomName, useStore } from '../data/store';
+import { roomArea } from '../data/measurementKinds';
 import { daysUntil, formatDate, money } from '../format';
 import { href } from '../router';
 import { navItems } from '../components/Layout';
@@ -17,10 +18,11 @@ export function HomePage() {
   const { totalBudget, totalSpent } = useBudgetTotals();
   const [adding, setAdding] = useState<'task' | 'payment' | null>(null);
 
-  const totalArea = rooms.reduce((s, r) => s + r.areaSqm, 0);
+  const areaOf = (r: (typeof rooms)[number]) => roomArea(r, data.measurements);
+  const totalArea = rooms.reduce((s, r) => s + areaOf(r), 0);
   const overall = rooms.length === 0 ? 0 : Math.round(
     totalArea > 0
-      ? rooms.reduce((s, r) => s + r.progress * r.areaSqm, 0) / totalArea
+      ? rooms.reduce((s, r) => s + r.progress * areaOf(r), 0) / totalArea
       : rooms.reduce((s, r) => s + r.progress, 0) / rooms.length,
   );
   const inProgressRooms = rooms.filter((r) => r.status === 'In progress');

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { newId, todayIso, useStore } from '../data/store';
+import { newId, todayIso, useRoomName, useStore } from '../data/store';
 import type { Expense } from '../data/types';
 import { DateInput, EditorModal, FieldRow, NumberInput, SelectInput, TextInput, numText, toNumber } from '../components/forms';
 
-export function ExpenseEditor({ expense, onClose }: { expense?: Expense; onClose: () => void }) {
+export function ExpenseEditor({ expense, roomId, onClose }: { expense?: Expense; roomId?: string; onClose: () => void }) {
   const { data, upsert, remove, notify } = useStore();
+  const roomName = useRoomName();
+  const [room, setRoom] = useState(expense ? (expense.roomId ?? '') : (roomId ?? ''));
   const [description, setDescription] = useState(expense?.description ?? '');
   const [amount, setAmount] = useState(numText(expense?.amount));
   const [categoryId, setCategoryId] = useState(expense?.categoryId ?? data.budgetCategories[0]?.id ?? '');
@@ -22,7 +24,7 @@ export function ExpenseEditor({ expense, onClose }: { expense?: Expense; onClose
     setErrors(e);
     if (Object.keys(e).length) return;
 
-    upsert('expenses', { id: expense?.id ?? newId(), description: description.trim(), amount: amountNum!, categoryId, vendor: vendor.trim(), date });
+    upsert('expenses', { id: expense?.id ?? newId(), description: description.trim(), amount: amountNum!, categoryId, vendor: vendor.trim(), date, roomId: room || undefined });
     notify(expense ? 'Payment updated' : 'Payment added');
     onClose();
   };
@@ -42,6 +44,7 @@ export function ExpenseEditor({ expense, onClose }: { expense?: Expense; onClose
         <DateInput label="Date paid" value={date} onChange={setDate} error={errors.date} />
       </FieldRow>
       <SelectInput label="Category" value={categoryId} onChange={setCategoryId} error={errors.category} options={data.budgetCategories.map((c) => ({ value: c.id, label: c.name }))} />
+      <SelectInput label="Room" value={room} onChange={setRoom} options={[{ value: '', label: 'Whole home / not room-specific' }, ...data.rooms.map((r) => ({ value: r.id, label: roomName(r.id) }))]} />
       <TextInput label="Paid to (optional)" value={vendor} onChange={setVendor} placeholder="e.g. Oak & Stone Carpentry" />
     </EditorModal>
   );

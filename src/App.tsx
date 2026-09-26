@@ -2,7 +2,7 @@ import { Layout } from './components/Layout';
 import { useRoute } from './router';
 import { HomePage } from './pages/HomePage';
 import { RoomsPage } from './pages/RoomsPage';
-import { RoomDetailPage } from './pages/RoomDetailPage';
+import { RoomPage } from './pages/room/RoomPage';
 import { MeasurementsPage } from './pages/MeasurementsPage';
 import { PhotosPage } from './pages/PhotosPage';
 import { DesignsPage } from './pages/DesignsPage';
@@ -11,8 +11,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { StoreProvider } from './data/store';
 
 function Page({ path }: { path: string }) {
-  const roomMatch = path.match(/^\/rooms\/([\w-]+)$/);
-  if (roomMatch) return <RoomDetailPage roomId={roomMatch[1]} />;
+  const roomMatch = path.match(/^\/rooms\/([\w-]+)(?:\/(\w+))?$/);
+  if (roomMatch) return <RoomPage roomId={roomMatch[1]} tab={roomMatch[2]} />;
 
   switch (path) {
     case '/rooms': return <RoomsPage />;

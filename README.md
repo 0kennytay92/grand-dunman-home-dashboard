@@ -9,6 +9,14 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
 
 - **Add, edit and delete** rooms, measurements, payments, budget categories, designs and tasks.
   Look for the **+ Add** buttons; tap any item to edit or delete it.
+- **Open any room** to see its own page with five tabs:
+  - **Overview**: floor area, size, ceiling height, budget, notes, tasks and latest photos
+  - **Photos**: that room's photos; add new ones straight into the room
+  - **Measurements**: room width, room length and ceiling height, plus walls, doors,
+    windows (with height from the floor) and anything else. Floor area is worked out
+    from width × length. Switch between mm, cm and m.
+  - **Designs**: design ideas for the room
+  - **Budget**: a planned budget for the room, and the payments linked to it
 - **Tick off tasks** on the Home page or on a room's page.
 - **Add real photos**: on the Photos page (or a room's page) tap **Add photos**. On iPhone you can
   *Take Photo* or pick several from your *Photo Library*. Photos are shrunk automatically
@@ -96,8 +104,10 @@ src/
   data/types.ts        ← what information is stored
   data/store.tsx       ← keeps the data and saves it on the device
   data/images.ts       ← stores photo files on the device (IndexedDB)
+  data/measurementKinds.ts ← measurement types (wall, door, window…) and units
   data/sampleData.ts   ← example content
   pages/               ← one file per screen
+  pages/room/          ← the room page and its five tabs
   editors/             ← the add/edit forms
   components/          ← shared pieces (navigation, cards, form fields)
   styles.css           ← the look and feel

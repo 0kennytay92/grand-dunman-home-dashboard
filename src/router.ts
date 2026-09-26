@@ -12,9 +12,14 @@ export function useRoute() {
   const [path, setPath] = useState(currentPath);
 
   useEffect(() => {
+    let previous = currentPath();
     const onChange = () => {
-      setPath(currentPath());
-      window.scrollTo(0, 0);
+      const next = currentPath();
+      // Switching tabs inside the same room keeps your place on the page.
+      const sameRoom = (p: string) => p.match(/^\/rooms\/[\w-]+/)?.[0];
+      if (!sameRoom(next) || sameRoom(next) !== sameRoom(previous)) window.scrollTo(0, 0);
+      previous = next;
+      setPath(next);
     };
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);

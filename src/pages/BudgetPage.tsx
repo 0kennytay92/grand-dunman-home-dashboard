@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
-import { useBudgetTotals, useStore } from '../data/store';
+import { useBudgetTotals, useRoomName, useStore } from '../data/store';
 import type { BudgetCategory, Expense } from '../data/types';
 import { formatDate, money } from '../format';
 import { AddButton } from '../components/forms';
@@ -13,6 +13,7 @@ type Editing = { kind: 'category'; item?: BudgetCategory } | { kind: 'expense'; 
 export function BudgetPage() {
   const { budgetCategories, expenses } = useStore().data;
   const { spentBy, totalBudget, totalSpent, pct } = useBudgetTotals();
+  const roomName = useRoomName();
   const [editing, setEditing] = useState<Editing | null>(null);
   const remaining = totalBudget - totalSpent;
   const categoryName = (id: string) => budgetCategories.find((c) => c.id === id)?.name ?? 'No category';
@@ -84,7 +85,7 @@ export function BudgetPage() {
                   <button className="list-row row-button" onClick={() => setEditing({ kind: 'expense', item: e })}>
                     <div className="grow">
                       <p className="row-title">{e.description}</p>
-                      <p className="row-sub">{[categoryName(e.categoryId), e.vendor, formatDate(e.date)].filter(Boolean).join(' · ')}</p>
+                      <p className="row-sub">{[categoryName(e.categoryId), e.roomId && roomName(e.roomId), e.vendor, formatDate(e.date)].filter(Boolean).join(' · ')}</p>
                     </div>
                     <span className="row-amount">{money(e.amount)}</span>
                   </button>
