@@ -21,8 +21,8 @@ export type SyncStatus = 'syncing' | 'synced' | 'offline' | 'error';
 interface SyncState {
   cursor: string | null; // newest online change already applied here
   outbox: Record<ItemKey, number>; // item → edit counter (so an edit made mid-upload isn't lost)
-  uploads: string[]; // pictures to upload
-  deletes: string[]; // pictures to delete online
+  uploads: string[]; // pictures and files to upload
+  deletes: string[]; // pictures and files to delete online
   seen: Record<ItemKey, string>; // item → online timestamp already applied
 }
 
@@ -240,7 +240,7 @@ export class SyncEngine {
 
     if (this.state.deletes.length) {
       const ids = [...this.state.deletes];
-      const paths = ids.flatMap((id) => [imagePath(this.homeId, id, 'full'), imagePath(this.homeId, id, 'thumb')]);
+      const paths = ids.flatMap((id) => (['full', 'thumb', 'original'] as Variant[]).map((v) => imagePath(this.homeId, id, v)));
       const { error } = await this.client.storage.from(IMAGE_BUCKET).remove(paths);
       if (error) throw error;
       this.state.deletes = this.state.deletes.filter((d) => !ids.includes(d));
@@ -250,12 +250,12 @@ export class SyncEngine {
   }
 
   private async uploadImage(id: string) {
-    for (const variant of ['thumb', 'full'] as Variant[]) {
+    for (const variant of ['thumb', 'full', 'original'] as Variant[]) {
       const blob = await getLocalImage(id, variant);
-      if (!blob) continue; // no longer on this device (e.g. deleted) – nothing to upload
+      if (!blob) continue; // not stored (e.g. deleted, or a file without this version) – nothing to upload
       const { error } = await this.client.storage
         .from(IMAGE_BUCKET)
-        .upload(imagePath(this.homeId, id, variant), blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
+        .upload(imagePath(this.homeId, id, variant), blob, { upsert: true, contentType: blob.type || (variant === 'original' ? 'application/octet-stream' : 'image/jpeg') });
       if (error) throw error;
     }
   }

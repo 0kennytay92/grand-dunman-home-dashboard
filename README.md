@@ -42,8 +42,18 @@ Sections: Home · Rooms · Floor Plan · Measurements · Photos · Interior Desi
   - **Paid** is always added up from the item's payments (deposits, progress and final payments;
     refunds are taken off; *scheduled* payments don't count until paid). **Remaining** = total − paid.
   - Changing a total keeps a short history of what it was and why it changed.
-  - Items can have product photos (camera or photo library), a vendor, room and category, product
-    details and delivery / installation dates and statuses.
+  - Items can have product photos and short videos (camera or photo library, up to 50 MB each), a
+    vendor, room and category, product details and delivery / installation dates and statuses.
+  - **Documents**: upload quotations, contracts, invoices, receipts, warranties and more, as PDFs or
+    photos. The original file is kept exactly as uploaded (open it or download it any time). A document
+    can be linked to a vendor, one or more items, and payments. Uploading an invoice never marks
+    anything as paid; if its amount differs from the item's total you're *offered* an update (tick
+    the box), nothing changes by itself.
+  - **Receipts / proof of payment** can be attached straight from a payment (e.g. a screenshot of
+    the bank transfer). Items with payments but no invoice, and paid payments with no receipt, show
+    under "Needs attention" – switch this off per item when no paperwork is expected.
+  - Documents and videos are stored on your device and, when syncing, in the same private online
+    storage as your photos – only people in your home can open them.
   - **Vendors** have their own page with contact buttons (call, WhatsApp, email) and a money summary.
   - A table on large screens and cards on phones, with search, filters and sorting; totals by room,
     category and vendor; what's coming up; and what needs attention (e.g. overdue payments).

@@ -11,7 +11,9 @@ import { useEffect, useState } from 'react';
 const DB_NAME = 'grand-dunman-home';
 const STORE = 'images';
 
-export type Variant = 'full' | 'thumb';
+/** full/thumb: resized pictures. original: an uploaded file kept exactly as it was (documents, videos). */
+export type Variant = 'full' | 'thumb' | 'original';
+const variants: Variant[] = ['full', 'thumb', 'original'];
 const key = (photoId: string, variant: Variant) => `${photoId}:${variant}`;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -68,6 +70,19 @@ export async function putImages(photoId: string, full: Blob, thumb: Blob, opts: 
   if (!opts.fromCloud) cloud.onPut?.(photoId);
 }
 
+/** Saves an uploaded file exactly as it is, with an optional small preview picture. */
+export async function putFile(id: string, original: Blob, thumb?: Blob, opts: { fromCloud?: boolean } = {}) {
+  await run('readwrite', (s) => {
+    s.put(original, key(id, 'original'));
+    if (thumb) s.put(thumb, key(id, 'thumb'));
+  });
+  forget(id);
+  if (!opts.fromCloud) cloud.onPut?.(id);
+}
+
+/** The largest file that can be added (the online storage accepts up to 50 MB per file). */
+export const MAX_FILE_MB = 50;
+
 /** Only what's stored on this device. */
 export function getLocalImage(photoId: string, variant: Variant) {
   return run<Blob | undefined>('readonly', (s) => s.get(key(photoId, variant)));
@@ -89,10 +104,7 @@ export async function getImage(photoId: string, variant: Variant) {
 export async function deleteImages(photoIds: string[], opts: { cloud?: boolean } = {}) {
   if (!photoIds.length) return;
   await run('readwrite', (s) => {
-    for (const id of photoIds) {
-      s.delete(key(id, 'full'));
-      s.delete(key(id, 'thumb'));
-    }
+    for (const id of photoIds) for (const v of variants) s.delete(key(id, v));
   });
   photoIds.forEach(forget);
   if (opts.cloud) cloud.onDelete?.(photoIds);
@@ -150,7 +162,7 @@ export async function processPhoto(file: Blob) {
 const urlCache = new Map<string, string>();
 
 function forget(photoId: string) {
-  for (const v of ['full', 'thumb'] as Variant[]) {
+  for (const v of variants) {
     const k = key(photoId, v);
     const url = urlCache.get(k);
     if (url) URL.revokeObjectURL(url);
@@ -207,20 +219,22 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
-export type ImageBundle = Record<string, { full: string; thumb: string }>;
+export type ImageBundle = Record<string, { full?: string; thumb?: string; original?: string }>;
 
 export async function exportImages(photoIds: string[]): Promise<ImageBundle> {
   const out: ImageBundle = {};
   for (const id of photoIds) {
-    const [full, thumb] = await Promise.all([getImage(id, 'full'), getImage(id, 'thumb')]);
+    const [full, thumb, original] = await Promise.all(variants.map((v) => getImage(id, v)));
     if (full && thumb) out[id] = { full: await blobToDataUrl(full), thumb: await blobToDataUrl(thumb) };
+    else if (original) out[id] = { original: await blobToDataUrl(original), ...(thumb ? { thumb: await blobToDataUrl(thumb) } : {}) };
   }
   return out;
 }
 
 export async function importImages(bundle: ImageBundle) {
-  for (const [id, { full, thumb }] of Object.entries(bundle)) {
-    await putImages(id, dataUrlToBlob(full), dataUrlToBlob(thumb));
+  for (const [id, { full, thumb, original }] of Object.entries(bundle)) {
+    if (full && thumb) await putImages(id, dataUrlToBlob(full), dataUrlToBlob(thumb));
+    else if (original) await putFile(id, dataUrlToBlob(original), thumb ? dataUrlToBlob(thumb) : undefined);
   }
 }
 

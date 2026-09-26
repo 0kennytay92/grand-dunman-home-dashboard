@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { putImages, processPhoto, requestPersistentStorage } from '../data/images';
+import { MAX_FILE_MB, putFile, putImages, processPhoto, requestPersistentStorage } from '../data/images';
 import { newId, todayIso, useStore } from '../data/store';
 import { blankItem } from '../data/budget';
 import type { PurchaseItem } from '../data/types';
@@ -7,22 +7,32 @@ import { EditorModal, SelectInput, TextInput } from '../components/forms';
 
 const NEW_ITEM = '__new__';
 
-/** Shrinks and stores the chosen photos. Returns the new image ids (skipping any that failed). */
+/** Shrinks and stores the chosen photos; videos are kept as they are. Returns the new ids (skipping any that failed). */
 async function storePhotos(files: File[]) {
   requestPersistentStorage();
   const ids: string[] = [];
-  let failed = 0;
+  const videoIds: string[] = [];
+  const problems: string[] = [];
   for (const file of files) {
+    const id = newId();
     try {
-      const { full, thumb } = await processPhoto(file);
-      const id = newId();
-      await putImages(id, full, thumb);
-      ids.push(id);
+      if (file.type.startsWith('video/')) {
+        if (file.size > MAX_FILE_MB * 1_048_576) {
+          problems.push(`"${file.name}" is over ${MAX_FILE_MB} MB – please use a shorter video.`);
+          continue;
+        }
+        await putFile(id, file);
+        videoIds.push(id);
+      } else {
+        const { full, thumb } = await processPhoto(file);
+        await putImages(id, full, thumb);
+        ids.push(id);
+      }
     } catch {
-      failed++;
+      problems.push(`"${file.name}" could not be saved. The file may not be a photo or video, or the device may be out of space.`);
     }
   }
-  return { ids, failed };
+  return { ids, videoIds, problems };
 }
 
 /**
@@ -37,16 +47,22 @@ export function ItemPhotoAdder({ itemId, children }: { itemId?: string; children
 
   const addTo = async (chosen: File[], target: PurchaseItem) => {
     setBusy(true);
-    const { ids, failed } = await storePhotos(chosen);
+    const { ids, videoIds, problems } = await storePhotos(chosen);
     setBusy(false);
-    if (ids.length) {
+    const n = ids.length + videoIds.length;
+    if (n) {
       // Read the latest copy of the item, in case it changed while the photos were processed.
       const latest = getData().purchases.find((i) => i.id === target.id) ?? target;
-      upsert('purchases', { ...latest, photoIds: [...latest.photoIds, ...ids], coverId: latest.coverId ?? ids[0] });
-      notify(ids.length === 1 ? 'Photo added' : `${ids.length} photos added`);
+      upsert('purchases', {
+        ...latest,
+        photoIds: [...latest.photoIds, ...ids],
+        ...(videoIds.length ? { videoIds: [...(latest.videoIds ?? []), ...videoIds] } : {}),
+        coverId: latest.coverId ?? ids[0],
+      });
+      notify(n === 1 ? (videoIds.length ? 'Video added' : 'Photo added') : `${n} added`);
     }
-    if (failed) window.alert(`${failed} photo${failed > 1 ? 's' : ''} could not be saved. The file may not be a photo, or the device may be out of space.`);
-    return ids.length > 0;
+    if (problems.length) window.alert(problems.join('\n'));
+    return n > 0;
   };
 
   return (
@@ -55,7 +71,7 @@ export function ItemPhotoAdder({ itemId, children }: { itemId?: string; children
       <input
         ref={input}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         hidden
         onChange={(e) => {
@@ -102,9 +118,9 @@ function ChooseItem({ files, busy, onClose, onPick }: { files: File[]; busy: boo
   };
 
   return (
-    <EditorModal title={files.length === 1 ? 'Product photo' : `${files.length} product photos`} onClose={busy ? () => {} : onClose} onSave={save} saveLabel={busy ? 'Saving…' : 'Save'}>
+    <EditorModal title={files.length === 1 ? (files[0].type.startsWith('video/') ? 'Product video' : 'Product photo') : `${files.length} product photos & videos`} onClose={busy ? () => {} : onClose} onSave={save} saveLabel={busy ? 'Saving…' : 'Save'}>
       <div className="upload-previews">
-        {previews.map((u, i) => <img key={u} src={u} alt={`Selected photo ${i + 1}`} />)}
+        {previews.map((u, i) => (files[i].type.startsWith('video/') ? <video key={u} src={u} muted playsInline /> : <img key={u} src={u} alt={`Selected photo ${i + 1}`} />))}
       </div>
       <SelectInput
         label="Which item is this for?"

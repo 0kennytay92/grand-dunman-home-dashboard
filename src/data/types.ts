@@ -146,7 +146,9 @@ export interface PurchaseItem {
   deliveryStatus: DeliveryStatus;
   installationStatus: InstallationStatus;
   photoIds: string[]; // product photos, stored like other pictures
+  videoIds?: string[]; // short videos, stored as the original file
   coverId?: string; // which photo shows on cards
+  paperworkNotNeeded?: boolean; // no invoice / receipt expected (e.g. paid in a shop), so don't flag it
   createdAt?: string;
 }
 
@@ -168,6 +170,33 @@ export interface Payment {
   categoryId?: string; // for payments not linked to an item
   roomId?: string; // for payments not linked to an item
   fromExpenseId?: string; // set when copied from an earlier payment record
+}
+
+export type DocumentType =
+  | 'Quotation' | 'Contract' | 'Purchase Order' | 'Invoice' | 'Receipt' | 'Proof of Payment'
+  | 'Warranty' | 'Product Specification' | 'Installation Guide' | 'Other';
+
+/**
+ * An uploaded document (PDF or picture). The original file is kept exactly as uploaded,
+ * stored on the device and in the home's private online storage under this document's id.
+ * A document never changes any amounts: an invoice is not an item and not a payment.
+ */
+export interface DocumentFile {
+  id: string;
+  type: DocumentType;
+  title: string;
+  date: string; // date on the document (YYYY-MM-DD)
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  hasThumb?: boolean; // pictures get a small preview
+  vendorId?: string;
+  itemIds: string[]; // one invoice can cover several items
+  paymentIds: string[]; // e.g. the receipt or proof for a payment
+  number?: string; // invoice / quotation number
+  amount?: number; // the total printed on it, for reference only
+  notes?: string;
+  addedAt: string;
 }
 
 export interface Task {
@@ -208,6 +237,7 @@ export interface AppData {
   vendors: Vendor[];
   purchases: PurchaseItem[];
   payments: Payment[];
+  documents: DocumentFile[];
   tasks: Task[];
   floorPlan?: FloorPlanImage;
 }

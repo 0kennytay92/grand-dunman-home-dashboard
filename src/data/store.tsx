@@ -22,7 +22,7 @@ type Collections = Omit<AppData, 'version' | 'project' | 'floorPlan'>;
 export type CollectionName = keyof Collections;
 type ItemOf<K extends CollectionName> = Collections[K][number];
 
-const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'tasks'];
+const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'tasks'];
 
 /** Checks that a file or saved value looks like our data, filling any missing lists. */
 export function parseData(raw: unknown): AppData {
@@ -43,6 +43,7 @@ export function parseData(raw: unknown): AppData {
     vendors: [],
     purchases: [],
     payments: [],
+    documents: [],
     tasks: [],
   };
   for (const k of collectionNames) {
@@ -58,6 +59,7 @@ export function parseData(raw: unknown): AppData {
   const oldTags: Record<string, PhotoTag> = { Before: 'Existing Condition', Progress: 'Renovation Progress', Inspiration: 'Design Reference' };
   data.photos = data.photos.map((p) => (oldTags[p.tag] ? { ...p, tag: oldTags[p.tag] } : p));
   data.purchases = data.purchases.map((i) => (Array.isArray(i.photoIds) ? i : { ...i, photoIds: [] }));
+  data.documents = data.documents.map((x) => (Array.isArray(x.itemIds) && Array.isArray(x.paymentIds) ? x : { ...x, itemIds: x.itemIds ?? [], paymentIds: x.paymentIds ?? [] }));
   return data;
 }
 
@@ -176,7 +178,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       name === 'photos' ? [id]
       : name === 'designs' ? d0.designs.filter((x) => x.id === id).flatMap(designImageIds)
       : name === 'rooms' ? [...d0.photos.filter((p) => p.roomId === id).map((p) => p.id), ...d0.designs.filter((x) => x.roomId === id).flatMap(designImageIds)]
-      : name === 'purchases' ? d0.purchases.find((x) => x.id === id)?.photoIds ?? []
+      : name === 'purchases' ? [...(d0.purchases.find((x) => x.id === id)?.photoIds ?? []), ...(d0.purchases.find((x) => x.id === id)?.videoIds ?? [])]
+      : name === 'documents' ? [id]
       : [];
     deleteImages(imageIds, { cloud: true }).catch(() => {});
 
@@ -201,10 +204,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         // Payments are money records: they stay, just no longer linked to the item.
         const item = d.purchases.find((x) => x.id === id);
         next.payments = d.payments.map((p) => (p.itemId === id ? { ...p, itemId: undefined, roomId: p.roomId ?? item?.roomId, categoryId: p.categoryId ?? item?.categoryId, description: p.description || item?.name } : p));
+        // Documents are kept too (an invoice may cover other items).
+        next.documents = d.documents.map((x) => (x.itemIds.includes(id) ? { ...x, itemIds: x.itemIds.filter((i) => i !== id) } : x));
+      }
+      if (name === 'payments') {
+        next.documents = d.documents.map((x) => (x.paymentIds.includes(id) ? { ...x, paymentIds: x.paymentIds.filter((i) => i !== id) } : x));
       }
       if (name === 'vendors') {
         next.purchases = d.purchases.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
         next.payments = d.payments.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
+        next.documents = d.documents.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
       }
       return next;
     });
@@ -229,7 +238,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const gone = rows.filter((r) => r.deleted);
     const imageIds = [
       ...gone.filter((r) => r.collection === 'photos').map((r) => r.id),
-      ...gone.filter((r) => r.collection === 'purchases').flatMap((r) => before.purchases.find((x) => x.id === r.id)?.photoIds ?? []),
+      ...gone.filter((r) => r.collection === 'purchases').flatMap((r) => { const i = before.purchases.find((x) => x.id === r.id); return [...(i?.photoIds ?? []), ...(i?.videoIds ?? [])]; }),
+      ...gone.filter((r) => r.collection === 'documents').map((r) => r.id),
       ...gone.filter((r) => r.collection === 'designs').flatMap((r) => {
         const d = before.designs.find((x) => x.id === r.id);
         return d ? designImageIds(d) : [];
@@ -321,8 +331,10 @@ export async function readBackup(text: string): Promise<AppData> {
   }));
   data.purchases = data.purchases.map((i) => {
     const photoIds = i.photoIds.filter((r) => restored.has(r));
-    return { ...i, photoIds, coverId: i.coverId && photoIds.includes(i.coverId) ? i.coverId : undefined };
+    const videoIds = i.videoIds?.filter((r) => restored.has(r));
+    return { ...i, photoIds, videoIds, coverId: i.coverId && photoIds.includes(i.coverId) ? i.coverId : undefined };
   });
+  // Documents whose file isn't in the backup are kept (their details are still useful); they show as "file missing".
   return data;
 }
 
@@ -339,6 +351,7 @@ export function blankData(current: AppData): AppData {
     vendors: [],
     purchases: [],
     payments: [],
+    documents: [],
     tasks: [],
   };
 }

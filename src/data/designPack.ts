@@ -41,7 +41,7 @@ export async function savePackImages(pack: DesignPack, designs: Design[], withFl
   let done = 0;
   for (const id of ids) {
     const img = pack.images[id];
-    if (img) await putImages(id, dataUrlToBlob(img.full), dataUrlToBlob(img.thumb));
+    if (img?.full && img.thumb) await putImages(id, dataUrlToBlob(img.full), dataUrlToBlob(img.thumb));
     onProgress?.(++done, ids.length);
   }
 }

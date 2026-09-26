@@ -1,4 +1,4 @@
-import type { AmountChange, AmountStatus, AppData, BudgetCategory, DeliveryStatus, InstallationStatus, Payment, PaymentType, PurchaseItem, Vendor } from './types';
+import type { AmountChange, AmountStatus, AppData, BudgetCategory, DeliveryStatus, DocumentFile, DocumentType, InstallationStatus, Payment, PaymentType, PurchaseItem, Vendor } from './types';
 
 // ─────────────────────────────────────────────────────────────
 // RENOVATION BUDGET
@@ -23,6 +23,36 @@ export const installationStatuses: InstallationStatus[] = [
 export const paymentTypes: PaymentType[] = ['Deposit', 'Progress Payment', 'Final Payment', 'Refund', 'Other'];
 export const paymentMethods = ['PayNow', 'Bank transfer', 'Credit card', 'Debit card', 'Cash', 'Cheque', 'Other'];
 export const amountStatuses: AmountStatus[] = ['Estimated', 'Confirmed'];
+
+export const documentTypes: DocumentType[] = [
+  'Quotation', 'Contract', 'Purchase Order', 'Invoice', 'Receipt', 'Proof of Payment',
+  'Warranty', 'Product Specification', 'Installation Guide', 'Other',
+];
+
+/** Documents that show a payment was made. */
+export const receiptTypes: DocumentType[] = ['Receipt', 'Proof of Payment'];
+
+export const docsForItem = (docs: DocumentFile[], itemId: string) => docs.filter((d) => d.itemIds.includes(itemId));
+export const docsForPayment = (docs: DocumentFile[], paymentId: string) => docs.filter((d) => d.paymentIds.includes(paymentId));
+
+/** Paid payments on an item that have no receipt or proof of payment attached. */
+export function paymentsMissingReceipt(item: PurchaseItem, payments: Payment[], docs: DocumentFile[]) {
+  if (item.paperworkNotNeeded) return [];
+  return payments.filter((p) => p.itemId === item.id && p.status === 'Paid' && p.type !== 'Refund' && !docsForPayment(docs, p.id).some((d) => receiptTypes.includes(d.type)));
+}
+
+/** True when money has been paid on an item but no invoice is attached to it. */
+export function invoiceMissing(item: PurchaseItem, payments: Payment[], docs: DocumentFile[]) {
+  if (item.paperworkNotNeeded) return false;
+  const paid = payments.some((p) => p.itemId === item.id && p.status === 'Paid' && p.type !== 'Refund');
+  return paid && !docsForItem(docs, item.id).some((d) => d.type === 'Invoice');
+}
+
+/** "2.4 MB", "830 KB" */
+export function fileSize(bytes: number) {
+  if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
 
 export const suggestedCategories = [
   'Interior Design', 'Carpentry', 'Furniture', 'Electrical', 'Lighting', 'Appliances', 'Curtains / Blinds',
@@ -250,7 +280,7 @@ export interface Attention {
 }
 
 /** Things to look at: overdue payments, deliveries and installations, payments to link, amounts to find out. */
-export function needsAttention(data: Pick<AppData, 'purchases' | 'payments'>, today: string): Attention[] {
+export function needsAttention(data: Pick<AppData, 'purchases' | 'payments' | 'documents'>, today: string): Attention[] {
   const out: Attention[] = [];
   for (const p of data.payments) {
     if (p.status === 'Scheduled' && p.date < today) {
@@ -267,6 +297,12 @@ export function needsAttention(data: Pick<AppData, 'purchases' | 'payments'>, to
       out.push({ key: `ins-${i.id}`, tone: 'bad', title: 'Installation overdue', detail: i.name, date: i.expectedInstallation, item: i });
     }
     if (i.installationStatus === 'Installation Issue') out.push({ key: `insi-${i.id}`, tone: 'bad', title: 'Installation issue', detail: i.name, item: i });
+  }
+  // Paperwork: after the overdue things, as it's less urgent.
+  for (const i of data.purchases) {
+    if (invoiceMissing(i, data.payments, data.documents)) out.push({ key: `inv-${i.id}`, tone: 'warn', title: 'Invoice missing', detail: i.name, item: i });
+    const noReceipt = paymentsMissingReceipt(i, data.payments, data.documents);
+    if (noReceipt.length) out.push({ key: `rec-${i.id}`, tone: 'warn', title: 'Receipt missing', detail: `${i.name} – ${noReceipt.length} payment${noReceipt.length === 1 ? '' : 's'}`, item: i });
   }
   return out;
 }

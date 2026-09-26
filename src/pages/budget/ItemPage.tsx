@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, ChevronLeft, CreditCard, History, LayoutGrid, Pencil, Plus, Star, Trash2 } from 'lucide-react';
+import { Camera, ChevronLeft, CreditCard, FileText, FileUp, History, LayoutGrid, Paperclip, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRoomName, useStore } from '../../data/store';
 import { deleteImages, useImageUrl } from '../../data/images';
-import { deliveryTone, installationTone, itemMoney, paidValue, paymentTone, pctText } from '../../data/budget';
+import { docsForItem, docsForPayment, deliveryTone, installationTone, invoiceMissing, itemMoney, paidValue, paymentTone, paymentsMissingReceipt, pctText, receiptTypes } from '../../data/budget';
 import type { Payment, PurchaseItem } from '../../data/types';
 import { formatDate, money } from '../../format';
 import { AmountEditor, ItemEditor } from '../../editors/ItemEditor';
@@ -14,12 +14,15 @@ import { LinkedText } from '../../components/LinkedText';
 import { Badge, Card, EmptyState, ProgressBar } from '../../components/ui';
 import { tabHref } from '../room/tabs';
 import { ItemThumb } from './ItemList';
+import { DocumentAdder } from '../../editors/DocumentForm';
+import { DocumentRows } from './Documents';
 import { budgetHref, itemHref, vendorHref, type ItemTab } from './links';
 
 const tabs: { id: ItemTab; label: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'payments', label: 'Payments', icon: CreditCard },
-  { id: 'photos', label: 'Photos', icon: Camera },
+  { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'photos', label: 'Photos & videos', icon: Camera },
 ];
 
 /** One item: its money, details, payments and photos. */
@@ -50,7 +53,8 @@ export function ItemPage({ itemId, tab: tabParam }: { itemId: string; tab?: stri
   const vendor = data.vendors.find((v) => v.id === item.vendorId);
   const category = data.budgetCategories.find((c) => c.id === item.categoryId);
   const payments = data.payments.filter((p) => p.itemId === item.id).sort((a, b) => b.date.localeCompare(a.date));
-  const counts: Partial<Record<ItemTab, number>> = { payments: payments.length, photos: item.photoIds.length };
+  const docs = docsForItem(data.documents, item.id);
+  const counts: Partial<Record<ItemTab, number>> = { payments: payments.length, documents: docs.length, photos: item.photoIds.length + (item.videoIds?.length ?? 0) };
 
   return (
     <>
@@ -70,6 +74,9 @@ export function ItemPage({ itemId, tab: tabParam }: { itemId: string; tab?: stri
         <div className="header-actions">
           <button className="btn btn-ghost" onClick={() => setEditing('item')}><Pencil size={15} /> Edit</button>
           <button className="btn btn-primary" onClick={() => setEditing({})}><Plus size={16} /> Add payment</button>
+          <DocumentAdder defaults={{ itemIds: [item.id], vendorId: item.vendorId }}>
+            {(open) => <button className="btn btn-ghost" onClick={open}><FileUp size={16} /> Upload document</button>}
+          </DocumentAdder>
           <ItemPhotoAdder itemId={item.id}>
             {(open, busy) => <button className="btn btn-ghost" onClick={open} disabled={busy}><Camera size={16} /> {busy ? 'Saving…' : 'Add photo'}</button>}
           </ItemPhotoAdder>
@@ -119,6 +126,7 @@ export function ItemPage({ itemId, tab: tabParam }: { itemId: string; tab?: stri
       <div className="room-tab-body">
         {tab === 'overview' && <Overview item={item} onEdit={() => setEditing('item')} />}
         {tab === 'payments' && <PaymentsTab payments={payments} onAdd={() => setEditing({})} onOpen={(p) => setEditing({ payment: p })} />}
+        {tab === 'documents' && <DocumentsTab item={item} />}
         {tab === 'photos' && <PhotosTab item={item} />}
       </div>
 
@@ -185,11 +193,13 @@ function Overview({ item, onEdit }: { item: PurchaseItem; onEdit: () => void }) 
 
 export function PaymentRow({ p, onOpen, showItem }: { p: Payment; onOpen: (p: Payment) => void; showItem?: boolean }) {
   const { data } = useStore();
-  const item = showItem ? data.purchases.find((i) => i.id === p.itemId) : undefined;
+  const item = data.purchases.find((i) => i.id === p.itemId);
   const vendor = data.vendors.find((v) => v.id === p.vendorId)?.name;
   const title = showItem ? (item?.name ?? p.description ?? 'Payment') : p.description || p.type;
   const sub = [showItem ? p.type : p.description && p.type, showItem && vendor, p.method, p.reference && `Ref ${p.reference}`].filter(Boolean).join(' · ');
   const value = paidValue(p);
+  const attached = docsForPayment(data.documents, p.id);
+  const hasReceipt = attached.some((d) => receiptTypes.includes(d.type));
   return (
     <button className="list-row row-button" onClick={() => onOpen(p)}>
       <div className="date-tile">
@@ -198,7 +208,11 @@ export function PaymentRow({ p, onOpen, showItem }: { p: Payment; onOpen: (p: Pa
       </div>
       <div className="grow">
         <p className="row-title">{title}</p>
-        <p className="row-sub">{sub || formatDate(p.date)}</p>
+        <p className="row-sub">
+          {sub || formatDate(p.date)}
+          {attached.length > 0 && <span className="clip-tag"><Paperclip size={12} /> {attached.length}</span>}
+          {!hasReceipt && p.status === 'Paid' && p.type !== 'Refund' && p.itemId && !item?.paperworkNotNeeded && !showItem && <span className="no-receipt"> · no receipt yet</span>}
+        </p>
       </div>
       <div className="pay-amount">
         <span className={`row-amount ${p.type === 'Refund' ? 'refund' : ''}`}>{p.type === 'Refund' ? '−' : ''}{money(p.amount)}</span>
@@ -238,17 +252,25 @@ function PhotosTab({ item }: { item: PurchaseItem }) {
     notify('Photo deleted');
   };
 
+  const removeVideo = (id: string) => {
+    if (!window.confirm('Delete this video?')) return;
+    upsert('purchases', { ...item, videoIds: (item.videoIds ?? []).filter((x) => x !== id) });
+    deleteImages([id], { cloud: true }).catch(() => {});
+    notify('Video deleted');
+  };
+  const videos = item.videoIds ?? [];
+
   return (
     <Card
-      title="Product photos"
+      title="Photos & videos"
       action={
         <ItemPhotoAdder itemId={item.id}>
-          {(open, busy) => <button className="link" onClick={open} disabled={busy}><Plus size={15} /> {busy ? 'Saving…' : 'Add photo'}</button>}
+          {(open, busy) => <button className="link" onClick={open} disabled={busy}><Plus size={15} /> {busy ? 'Saving…' : 'Add photo or video'}</button>}
         </ItemPhotoAdder>
       }
     >
-      {item.photoIds.length === 0 ? (
-        <EmptyState>No photos yet. Add product photos, showroom pictures or screenshots.</EmptyState>
+      {item.photoIds.length === 0 && videos.length === 0 ? (
+        <EmptyState>No photos yet. Add product photos, showroom pictures, screenshots or short videos (up to 50 MB).</EmptyState>
       ) : (
         <div className="item-photos">
           {item.photoIds.map((id, i) => (
@@ -266,9 +288,55 @@ function PhotosTab({ item }: { item: PurchaseItem }) {
               </figcaption>
             </figure>
           ))}
+          {videos.map((id) => (
+            <figure key={id} className="item-photo">
+              <Video id={id} />
+              <figcaption>
+                <span className="muted">Video</span>
+                <button type="button" className="icon-btn small danger" onClick={() => removeVideo(id)} aria-label="Delete video"><Trash2 size={15} /></button>
+              </figcaption>
+            </figure>
+          ))}
         </div>
       )}
       {viewing !== null && <ImageLightbox images={item.photoIds.map((id) => ({ id, caption: item.name }))} start={viewing} onClose={() => setViewing(null)} />}
+    </Card>
+  );
+}
+
+function Video({ id }: { id: string }) {
+  const url = useImageUrl(id, 'original');
+  return <div className="item-photo-img video">{url ? <video src={url} controls playsInline preload="metadata" /> : <span className="muted">Loading…</span>}</div>;
+}
+
+function DocumentsTab({ item }: { item: PurchaseItem }) {
+  const { data, upsert, notify } = useStore();
+  const docs = docsForItem(data.documents, item.id);
+  const missingInvoice = invoiceMissing(item, data.payments, data.documents);
+  const noReceipt = paymentsMissingReceipt(item, data.payments, data.documents);
+  const toggle = () => {
+    upsert('purchases', { ...item, paperworkNotNeeded: !item.paperworkNotNeeded || undefined });
+    notify(item.paperworkNotNeeded ? 'Missing paperwork will be flagged' : "Won't flag missing paperwork for this item");
+  };
+  return (
+    <Card
+      title="Documents"
+      action={
+        <DocumentAdder defaults={{ itemIds: [item.id], vendorId: item.vendorId }}>
+          {(open) => <button className="link" onClick={open}><Plus size={15} /> Upload document</button>}
+        </DocumentAdder>
+      }
+    >
+      {(missingInvoice || noReceipt.length > 0) && (
+        <p className="banner-info paperwork-note">
+          {[missingInvoice && 'No invoice yet', noReceipt.length > 0 && `${noReceipt.length} paid payment${noReceipt.length === 1 ? ' has' : 's have'} no receipt or proof of payment`].filter(Boolean).join(' · ')}
+        </p>
+      )}
+      <DocumentRows docs={docs} empty="No documents yet. Upload the quotation, contract, invoice or receipts – PDFs or photos. The original file is kept." />
+      <label className="checkbox-line paperwork-toggle">
+        <input type="checkbox" checked={!!item.paperworkNotNeeded} onChange={toggle} />
+        <span>No invoice or receipt expected for this item (don't flag it)</span>
+      </label>
     </Card>
   );
 }

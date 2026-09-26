@@ -11,6 +11,8 @@ import { Card, EmptyState, ProgressBar } from '../../components/ui';
 import { ItemList, noFilters, type ItemFilters } from './ItemList';
 import { PaymentRow } from './ItemPage';
 import { budgetHref } from './links';
+import { DocumentRows } from './Documents';
+import { DocumentAdder } from '../../editors/DocumentForm';
 
 /** Digits only, for tel: and WhatsApp links. Singapore numbers without a country code get +65. */
 function phoneDigits(n: string) {
@@ -107,6 +109,8 @@ export function VendorPage({ vendorId }: { vendorId: string }) {
       <h2 className="section-title">Items</h2>
       <ItemList items={items} filters={filters} setFilters={setFilters} hide={['vendor']} emptyText="No items from this vendor yet." />
 
+      <DocumentsForVendor vendorId={vendor.id} />
+
       <Card title="Payments" action={<button className="link" onClick={() => setEditing({})}><Plus size={15} /> Add payment</button>}>
         {payments.length === 0 ? (
           <EmptyState>No payments to this vendor yet.</EmptyState>
@@ -121,5 +125,16 @@ export function VendorPage({ vendorId }: { vendorId: string }) {
       {editing === 'item' && <ItemEditor defaults={{ vendorId: vendor.id }} onClose={() => setEditing(null)} onSaved={(id) => (window.location.hash = `/budget/items/${id}`)} />}
       {editing && typeof editing === 'object' && <PaymentEditor payment={editing.payment} itemId={items.length === 1 ? items[0].id : undefined} vendorId={vendor.id} onClose={() => setEditing(null)} />}
     </>
+  );
+}
+
+function DocumentsForVendor({ vendorId }: { vendorId: string }) {
+  const { data } = useStore();
+  const itemIds = new Set(data.purchases.filter((i) => i.vendorId === vendorId).map((i) => i.id));
+  const docs = data.documents.filter((d) => d.vendorId === vendorId || d.itemIds.some((i) => itemIds.has(i)));
+  return (
+    <Card title="Documents" action={<DocumentAdder defaults={{ vendorId }}>{(open) => <button className="link" onClick={open}><Plus size={15} /> Upload</button>}</DocumentAdder>}>
+      <DocumentRows docs={docs} empty="No quotations, invoices or receipts from this vendor yet." />
+    </Card>
   );
 }

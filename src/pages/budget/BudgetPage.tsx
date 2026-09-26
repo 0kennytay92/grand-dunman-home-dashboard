@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { AlertTriangle, Camera, ChevronRight, CreditCard, FileUp, Link2, Plus, Truck, Wrench } from 'lucide-react';
+import { AlertTriangle, Camera, ChevronRight, CreditCard, FileUp, Link2, ListPlus, Plus, Truck, Wrench } from 'lucide-react';
 import { todayIso, useBudgetTotals, useRoomName, useStore } from '../../data/store';
 import { needsAttention, paidValue, pctText, totalsFor, unlinkedPayments, upcoming, type Totals } from '../../data/budget';
 import type { BudgetCategory, Payment, PurchaseItem } from '../../data/types';
@@ -8,6 +8,8 @@ import { CategoryEditor } from '../../editors/CategoryEditor';
 import { ItemEditor } from '../../editors/ItemEditor';
 import { ItemImport } from '../../editors/ItemImport';
 import { ItemPhotoAdder } from '../../editors/ItemPhotoAdder';
+import { DocumentAdder } from '../../editors/DocumentForm';
+import { DocumentsCard } from './Documents';
 import { PaymentEditor } from '../../editors/PaymentEditor';
 import { VendorEditor } from '../../editors/VendorEditor';
 import { Card, Chips, EmptyState, PageHeader, ProgressBar } from '../../components/ui';
@@ -47,7 +49,7 @@ export function BudgetPage() {
         subtitle="Every item you're buying or building, what it costs and what's been paid. All amounts in Singapore dollars."
         action={
           <ItemImport>
-            {(open) => <button className="btn btn-ghost" onClick={open}><FileUp size={16} /> Import items</button>}
+            {(open) => <button className="btn btn-ghost" onClick={open}><ListPlus size={16} /> Import items</button>}
           </ItemImport>
         }
       />
@@ -55,6 +57,9 @@ export function BudgetPage() {
       <div className="quick-actions">
         <button className="qa" onClick={() => setEditing({ kind: 'item' })}><Plus size={20} /> Add item</button>
         <button className="qa" onClick={() => setEditing({ kind: 'payment' })}><CreditCard size={20} /> Add payment</button>
+        <DocumentAdder defaults={{ type: 'Invoice' }}>
+          {(open) => <button className="qa" onClick={open}><FileUp size={20} /> Upload invoice</button>}
+        </DocumentAdder>
         <ItemPhotoAdder>
           {(open, busy) => <button className="qa" onClick={open} disabled={busy}><Camera size={20} /> {busy ? 'Saving…' : 'Take product photo'}</button>}
         </ItemPhotoAdder>
@@ -91,7 +96,10 @@ export function BudgetPage() {
         <RecentPayments onOpen={(p) => setEditing({ kind: 'payment', payment: p })} onAdd={() => setEditing({ kind: 'payment' })} />
         <VendorsCard onAdd={() => setEditing({ kind: 'vendor' })} />
       </div>
-      <CategoriesCard onEdit={(c) => setEditing({ kind: 'category', category: c })} />
+      <div className="grid-2 after-items">
+        <DocumentsCard action={<DocumentAdder>{(open) => <button className="link" onClick={open}><Plus size={15} /> Upload</button>}</DocumentAdder>} />
+        <CategoriesCard onEdit={(c) => setEditing({ kind: 'category', category: c })} />
+      </div>
 
       {editing?.kind === 'item' && <ItemEditor defaults={{ roomId: filters.roomId && filters.roomId !== 'whole' ? filters.roomId : undefined }} onClose={close} onSaved={(id) => (window.location.hash = `/budget/items/${id}`)} />}
       {editing?.kind === 'payment' && <PaymentEditor payment={editing.payment} onClose={close} />}
@@ -182,8 +190,11 @@ function UpcomingCard({ onOpenPayment }: { onOpenPayment: (p: Payment) => void }
 
 function AttentionCard({ unlinkedCount, tbdCount, onTbd, onOpenPayment }: { unlinkedCount: number; tbdCount: number; onTbd: () => void; onOpenPayment: (p: Payment) => void }) {
   const { data } = useStore();
-  const list = needsAttention(data, todayIso());
-  const empty = !list.length && !unlinkedCount && !tbdCount;
+  const [all, setAll] = useState(false);
+  const full = needsAttention(data, todayIso());
+  const LIMIT = 5;
+  const list = all ? full : full.slice(0, LIMIT);
+  const empty = !full.length && !unlinkedCount && !tbdCount;
 
   return (
     <Card title="Needs attention">
@@ -235,6 +246,7 @@ function AttentionCard({ unlinkedCount, tbdCount, onTbd, onOpenPayment }: { unli
           )}
         </ul>
       )}
+      {full.length > LIMIT && !all && <button className="text-btn" onClick={() => setAll(true)}>Show all {full.length}</button>}
     </Card>
   );
 }

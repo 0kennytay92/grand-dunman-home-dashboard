@@ -242,5 +242,6 @@ export const sampleData: AppData = {
   vendors,
   purchases,
   payments,
+  documents: [],
   tasks,
 };

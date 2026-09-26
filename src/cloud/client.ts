@@ -22,4 +22,6 @@ export const supabase: SupabaseClient | null = cloudConfigured
   : null;
 
 export const IMAGE_BUCKET = 'home-images';
-export const imagePath = (homeId: string, imageId: string, variant: 'full' | 'thumb') => `${homeId}/${imageId}/${variant}.jpg`;
+/** Where a file lives in the private online storage. Resized pictures are .jpg; originals keep their own type. */
+export const imagePath = (homeId: string, imageId: string, variant: 'full' | 'thumb' | 'original') =>
+  variant === 'original' ? `${homeId}/${imageId}/original` : `${homeId}/${imageId}/${variant}.jpg`;
