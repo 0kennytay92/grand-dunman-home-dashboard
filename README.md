@@ -79,6 +79,28 @@ and updates automatically a minute or two after each change is pushed to GitHub
 - To move data from your computer's local copy (http://localhost:5173) to the online copy:
   Settings & Backup → **Export backup** locally, then **Import backup** online.
 
+## Online sync & sharing (optional)
+
+With online sync switched on (see `supabase/setup.sql` and *Setting up online sync* below),
+**Sync & Sharing** in the menu lets you:
+
+- sign in with email and password, on any number of devices;
+- put your home online once, then **Use the online copy** on your other devices;
+- see changes from other devices within seconds (and keep working offline – changes upload later);
+- invite family or your designer by email (they create an account with that email and your home appears).
+
+Photos and renders are kept in private online storage and download to a device the first time
+they're viewed. Only members of your home can read or change its data – this is enforced by the
+database, not just the app.
+
+### Setting up online sync (one time)
+
+1. Create a free project at supabase.com.
+2. In the project: **SQL Editor** → paste all of `supabase/setup.sql` → **Run**.
+3. **Authentication → URL Configuration**: Site URL = the app's web address; add the same address
+   (and `http://localhost:5173/**` for local use) to Redirect URLs.
+4. Put the project's URL and *publishable* key in `src/config.ts` (never the secret key).
+
 ## How to run it on your computer (one-time setup)
 
 1. **Install Node.js** (the engine that runs the app).
@@ -149,6 +171,9 @@ src/
   data/pptx.ts         ← reads renders out of PowerPoint files
   data/designPack.ts   ← imports ready-made design files
   data/floorPlanLayout.ts ← where each room sits on the Type 4BR G1 plan
+  cloud/               ← online sync: sign-in, sharing, the sync engine
+  config.ts            ← online sync settings (Supabase address and public key)
+supabase/setup.sql     ← database setup to paste into Supabase
   data/sampleData.ts   ← example content
   pages/               ← one file per screen
   pages/room/          ← the room page and its five tabs

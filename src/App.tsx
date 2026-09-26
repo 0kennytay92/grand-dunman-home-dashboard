@@ -12,6 +12,8 @@ import { BudgetPage } from './pages/BudgetPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { FloorPlanPage } from './pages/FloorPlanPage';
 import { StoreProvider } from './data/store';
+import { CloudProvider } from './cloud/CloudProvider';
+import { SyncPage } from './pages/SyncPage';
 
 function Page({ path }: { path: string }) {
   const roomMatch = path.match(/^\/rooms\/([\w-]+)(?:\/(\w+))?$/);
@@ -30,6 +32,7 @@ function Page({ path }: { path: string }) {
     case '/designs': return <DesignsPage />;
     case '/budget': return <BudgetPage />;
     case '/settings': return <SettingsPage />;
+    case '/sync': return <SyncPage />;
     default: return <HomePage />;
   }
 }
@@ -38,9 +41,11 @@ export default function App() {
   const path = useRoute();
   return (
     <StoreProvider>
-      <Layout path={path}>
-        <Page path={path} />
-      </Layout>
+      <CloudProvider>
+        <Layout path={path}>
+          <Page path={path} />
+        </Layout>
+      </CloudProvider>
     </StoreProvider>
   );
 }

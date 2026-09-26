@@ -63,7 +63,7 @@ export function DesignEditor({ design, from, roomId, onClose, onSaved }: {
         await putImages(id, full, thumb);
         hasImage = true;
       } else if (removeRender && design?.hasImage) {
-        await deleteImages([id]);
+        await deleteImages([id], { cloud: true });
         hasImage = false;
       }
 
@@ -88,7 +88,7 @@ export function DesignEditor({ design, from, roomId, onClose, onSaved }: {
         await putImages(refId, full, thumb);
         referenceIds.push(refId);
       }
-      if (design) await deleteImages(design.referenceIds.filter((r) => !keptRefs.includes(r)));
+      if (design) await deleteImages(design.referenceIds.filter((r) => !keptRefs.includes(r)), { cloud: true });
 
       upsert('designs', {
         ...(design ?? {}),

@@ -3,6 +3,7 @@ import { sampleData } from './sampleData';
 import type { AppData, PhotoTag, Project } from './types';
 import { upgradeMeasurements } from './measurementKinds';
 import { designImageIds, imageIdsInUse, upgradeDesigns } from './designs';
+import { applyRows, diffKeys, itemValue, type ItemKey, type RemoteRow } from '../cloud/changes';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
 // ─────────────────────────────────────────────────────────────
@@ -78,6 +79,13 @@ interface Store {
   update: (change: (d: AppData) => AppData) => void;
   updateProject: (project: Project) => void;
   replaceAll: (data: AppData) => void;
+  /** For online sync: hear about changes made on this device. Returns an unsubscribe function. */
+  onLocalChange: (listener: (keys: ItemKey[]) => void) => () => void;
+  /** For online sync: apply changes that came from another device (not sent back online). */
+  applyRemote: (rows: RemoteRow[]) => void;
+  /** For online sync: replace this device's data without treating it as edits. */
+  replaceLocal: (data: AppData) => void;
+  getData: () => AppData;
   toast: string | null;
   notify: (message: string) => void;
 }
@@ -97,7 +105,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     pruneImages(imageIdsInUse(dataRef.current)).catch(() => {});
   }, []);
 
-  // Save after every change.
+  // Online sync bookkeeping: which values came from another device (so they aren't sent back),
+  // and whether the next change is a quiet replacement.
+  const listeners = useRef(new Set<(keys: ItemKey[]) => void>());
+  const remoteApplied = useRef(new Map<ItemKey, unknown>());
+  const quietNext = useRef(false);
+  const prevData = useRef(data);
+
+  // Save after every change, and tell online sync what changed on this device.
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -105,6 +120,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {
       setSaveError(true);
     }
+    const prev = prevData.current;
+    prevData.current = data;
+    if (prev === data) return;
+    const quiet = quietNext.current;
+    quietNext.current = false;
+    const fromRemote = remoteApplied.current;
+    remoteApplied.current = new Map();
+    if (quiet) return;
+    const local = diffKeys(prev, data).filter((k) => !(fromRemote.has(k) && fromRemote.get(k) === itemValue(data, k)));
+    if (local.length) listeners.current.forEach((fn) => fn(local));
   }, [data]);
 
   const notify = useCallback((message: string) => {
@@ -130,7 +155,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       : name === 'designs' ? d0.designs.filter((x) => x.id === id).flatMap(designImageIds)
       : name === 'rooms' ? [...d0.photos.filter((p) => p.roomId === id).map((p) => p.id), ...d0.designs.filter((x) => x.roomId === id).flatMap(designImageIds)]
       : [];
-    deleteImages(imageIds).catch(() => {});
+    deleteImages(imageIds, { cloud: true }).catch(() => {});
 
     setData((d) => {
       const next = { ...d, [name]: (d[name] as { id: string }[]).filter((x) => x.id !== id) };
@@ -158,9 +183,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     pruneImages(imageIdsInUse(next)).catch(() => {});
   }, []);
 
+  const onLocalChange = useCallback((listener: (keys: ItemKey[]) => void) => {
+    listeners.current.add(listener);
+    return () => void listeners.current.delete(listener);
+  }, []);
+
+  const applyRemote = useCallback((rows: RemoteRow[]) => {
+    if (!rows.length) return;
+    // Pictures of photos/designs deleted on another device are removed here too (this device only).
+    const before = dataRef.current;
+    const gone = rows.filter((r) => r.deleted);
+    const imageIds = [
+      ...gone.filter((r) => r.collection === 'photos').map((r) => r.id),
+      ...gone.filter((r) => r.collection === 'designs').flatMap((r) => {
+        const d = before.designs.find((x) => x.id === r.id);
+        return d ? designImageIds(d) : [];
+      }),
+    ];
+    if (imageIds.length) deleteImages(imageIds).catch(() => {});
+    setData((d) => {
+      const { next, applied } = applyRows(d, rows);
+      applied.forEach((v, k) => remoteApplied.current.set(k, v));
+      return next;
+    });
+  }, []);
+
+  const replaceLocal = useCallback((next: AppData) => {
+    quietNext.current = true;
+    setData(next);
+    pruneImages(imageIdsInUse(next)).catch(() => {});
+  }, []);
+
+  const getData = useCallback(() => dataRef.current, []);
+
   const value = useMemo(
-    () => ({ data, saveError, upsert, remove, update, updateProject, replaceAll, toast, notify }),
-    [data, saveError, upsert, remove, update, updateProject, replaceAll, toast, notify],
+    () => ({ data, saveError, upsert, remove, update, updateProject, replaceAll, onLocalChange, applyRemote, replaceLocal, getData, toast, notify }),
+    [data, saveError, upsert, remove, update, updateProject, replaceAll, onLocalChange, applyRemote, replaceLocal, getData, toast, notify],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

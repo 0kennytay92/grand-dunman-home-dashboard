@@ -1,5 +1,9 @@
 import { useState, type ReactNode } from 'react';
-import { Home, DoorOpen, Map as MapIcon, Ruler, Camera, Palette, Wallet, Settings, Ellipsis, X, CircleCheck, TriangleAlert } from 'lucide-react';
+import { Home, DoorOpen, Map as MapIcon, Ruler, Camera, Palette, Wallet, Settings, Ellipsis, X, CircleCheck, TriangleAlert, Cloud, CloudOff } from 'lucide-react';
+import { cloudConfigured } from '../config';
+import { useCloud } from '../cloud/CloudProvider';
+import { PasswordReset } from '../cloud/PasswordReset';
+import { SyncLine } from '../pages/SyncPage';
 import type { LucideIcon } from 'lucide-react';
 import { href } from '../router';
 import { useStore } from '../data/store';
@@ -19,6 +23,7 @@ export const navItems: NavItem[] = [
   { path: '/designs', label: 'Interior Designs', icon: Palette },
   { path: '/budget', label: 'Budget', icon: Wallet },
   { path: '/settings', label: 'Settings & Backup', icon: Settings },
+  ...(cloudConfigured ? [{ path: '/sync', label: 'Sync & Sharing', icon: Cloud }] : []),
 ];
 
 // On phones the bottom bar shows these four, the rest sit under "More".
@@ -55,7 +60,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         </nav>
         <div className="sidebar-foot">
           <p>{data.project.address}</p>
-          <p className="muted">Saved on this device</p>
+          <SyncFoot />
         </div>
       </aside>
 
@@ -65,6 +70,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
           <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={30} height={30} />
           <strong>{data.project.name}</strong>
         </a>
+        <SyncBadge />
       </header>
 
       <main className="content">
@@ -106,11 +112,39 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
         </>
       )}
 
+      <PasswordReset />
+
       {toast && (
         <div className="toast" role="status">
           <CircleCheck size={18} /> {toast}
         </div>
       )}
     </div>
+  );
+}
+
+/** Sidebar: sync status, or where data is kept. */
+function SyncFoot() {
+  const cloud = useCloud();
+  if (!cloud.configured || !cloud.session || !cloud.sync) {
+    return (
+      <p className="muted">
+        Saved on this device{cloud.configured && <> · <a href={href('/sync')}>Sign in to sync</a></>}
+      </p>
+    );
+  }
+  return <a href={href('/sync')} className="sync-foot"><SyncLine compact /></a>;
+}
+
+/** Phone top bar: a small cloud showing sync status. */
+function SyncBadge() {
+  const cloud = useCloud();
+  if (!cloud.configured) return null;
+  const s = cloud.sync?.status;
+  const label = !cloud.session ? 'Sign in to sync' : !s ? 'Not syncing yet' : s === 'synced' ? 'Up to date' : s === 'syncing' ? 'Syncing' : s === 'offline' ? 'Offline' : 'Sync problem';
+  return (
+    <a href={href('/sync')} className={`sync-badge s-${s ?? 'off'}`} aria-label={`Sync: ${label}`} title={label}>
+      {s === 'offline' || !s ? <CloudOff size={18} /> : <Cloud size={18} />}
+    </a>
   );
 }

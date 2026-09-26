@@ -40,19 +40,53 @@ async function run<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => I
   });
 }
 
-export async function putImages(photoId: string, full: Blob, thumb: Blob) {
+// ── Online sync hooks ────────────────────────────────────────
+// When online sync is on, it listens here so new pictures get uploaded
+// and deletions are passed on, and it can fetch pictures this device
+// doesn't have yet.
+
+type ImageEvents = {
+  onPut?: (id: string) => void;
+  onDelete?: (ids: string[]) => void;
+  fetchRemote?: (id: string, variant: Variant) => Promise<Blob | undefined>;
+};
+let cloud: ImageEvents = {};
+export function connectImageSync(events: ImageEvents) {
+  cloud = events;
+  return () => {
+    if (cloud === events) cloud = {};
+  };
+}
+
+/** Saves a picture. `fromCloud` means it was just downloaded, so it isn't uploaded again. */
+export async function putImages(photoId: string, full: Blob, thumb: Blob, opts: { fromCloud?: boolean } = {}) {
   await run('readwrite', (s) => {
     s.put(full, key(photoId, 'full'));
     s.put(thumb, key(photoId, 'thumb'));
   });
   forget(photoId);
+  if (!opts.fromCloud) cloud.onPut?.(photoId);
 }
 
-export function getImage(photoId: string, variant: Variant) {
+/** Only what's stored on this device. */
+export function getLocalImage(photoId: string, variant: Variant) {
   return run<Blob | undefined>('readonly', (s) => s.get(key(photoId, variant)));
 }
 
-export async function deleteImages(photoIds: string[]) {
+/** A stored picture; fetched from the online copy (and kept) if this device doesn't have it yet. */
+export async function getImage(photoId: string, variant: Variant) {
+  const local = await getLocalImage(photoId, variant);
+  if (local || !cloud.fetchRemote) return local;
+  const remote = await cloud.fetchRemote(photoId, variant).catch(() => undefined);
+  if (remote) await run('readwrite', (s) => void s.put(remote, key(photoId, variant)));
+  return remote;
+}
+
+/**
+ * Deletes pictures from this device. `cloud: true` also removes the online copy
+ * (used when you delete a photo or design; not for tidying up).
+ */
+export async function deleteImages(photoIds: string[], opts: { cloud?: boolean } = {}) {
   if (!photoIds.length) return;
   await run('readwrite', (s) => {
     for (const id of photoIds) {
@@ -61,9 +95,10 @@ export async function deleteImages(photoIds: string[]) {
     }
   });
   photoIds.forEach(forget);
+  if (opts.cloud) cloud.onDelete?.(photoIds);
 }
 
-/** Removes any stored image whose photo no longer exists. */
+/** Removes any stored image whose photo no longer exists (this device only). */
 export async function pruneImages(keepPhotoIds: string[]) {
   const keep = new Set(keepPhotoIds);
   const keys = (await run<IDBValidKey[]>('readonly', (s) => s.getAllKeys())) as string[];

@@ -994,3 +994,39 @@ button.fp-row:hover .fp-room-cell { color: var(--accent); }
 .notes-text, .compare-notes, .prompt-text, .compare-prompt p { overflow-wrap: anywhere; }
 .compare-notes { white-space: pre-line; }
 .inline-link { display: inline; font-size: inherit; font-weight: 600; white-space: normal; word-break: break-all; }
+
+/* ── Sync & Sharing ───────────────────────────────────────── */
+
+.banner-info {
+  padding: 12px 14px; margin-bottom: 16px; border-radius: var(--radius-sm);
+  background: var(--info-soft); color: var(--info); font-size: 14px; line-height: 1.5;
+}
+.form-stack .banner-info { margin-bottom: 0; }
+.plain-list { display: flex; flex-direction: column; gap: 10px; padding-left: 18px; list-style: disc; color: var(--ink-2); font-size: 14.5px; }
+.signed-as { margin-bottom: 14px; }
+.home-choice { display: flex; flex-direction: column; gap: 10px; padding: 14px 0; border-top: 1px solid var(--line); }
+.home-choice:first-of-type { border-top: 0; padding-top: 4px; }
+.inline-form { display: flex; align-items: flex-end; gap: 10px; }
+.inline-form .field { flex: 1; }
+.mini-head { font-size: 13px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; margin: 18px 0 4px; }
+.sync-note { margin-top: 10px; }
+
+.sync-line { display: flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 550; }
+.sync-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--good); flex-shrink: 0; }
+.sync-line.s-syncing .sync-dot { background: var(--info); animation: pulse-dot 1s ease-in-out infinite; }
+.sync-line.s-error .sync-dot { background: var(--bad); }
+.sync-line.s-offline { color: var(--warn); }
+.sync-line.s-error { color: var(--bad); }
+@keyframes pulse-dot { 50% { opacity: 0.3; } }
+
+.sidebar-foot a { color: #e4c291; }
+.sync-foot .sync-line { font-size: 12.5px; font-weight: 500; color: var(--sidebar-ink); }
+.sync-foot .sync-line.s-offline { color: #e0a84e; }
+
+.sync-badge {
+  margin-left: auto; width: 36px; height: 36px; border-radius: 50%;
+  display: grid; place-items: center; color: var(--ink-3);
+}
+.sync-badge.s-synced { color: var(--good); }
+.sync-badge.s-syncing { color: var(--info); }
+.sync-badge.s-offline, .sync-badge.s-error { color: var(--warn); }

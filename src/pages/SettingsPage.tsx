@@ -4,9 +4,11 @@ import { blankData, downloadBackup, parseData, readBackup, useStore } from '../d
 import { storageUsedMb } from '../data/images';
 import { sampleData } from '../data/sampleData';
 import { Card, PageHeader } from '../components/ui';
+import { useCloud } from '../cloud/CloudProvider';
 import { DateInput, TextInput } from '../components/forms';
 
 export function SettingsPage() {
+  const cloud = useCloud();
   const { data, updateProject, replaceAll, notify } = useStore();
   const [name, setName] = useState(data.project.name);
   const [address, setAddress] = useState(data.project.address);
@@ -78,7 +80,12 @@ export function SettingsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Your data" title="Settings & Backup" subtitle="Everything you enter is saved automatically on this device, in this browser." />
+      <PageHeader eyebrow="Your data" title="Settings & Backup" subtitle={cloud.home ? `Saved on this device and synced online with “${cloud.home.name}”.` : 'Everything you enter is saved automatically on this device, in this browser.'} />
+      {cloud.home && (
+        <p className="banner-info">
+          You're syncing online: <strong>Import backup</strong>, <strong>Start fresh</strong> and <strong>Reset</strong> also change the shared home for everyone in it.
+        </p>
+      )}
 
       <div className="grid-2">
         <Card title="Home details">
