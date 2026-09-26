@@ -9,14 +9,18 @@ import { RoomEditor } from '../editors/RoomEditor';
 import { MeasurementEditor } from '../editors/MeasurementEditor';
 import { DesignEditor } from '../editors/DesignEditor';
 import { TaskEditor } from '../editors/TaskEditor';
-import { Badge, Card, EmptyState, PageHeader, PhotoPlaceholder, ProgressBar, statusTone } from '../components/ui';
+import { PhotoAdder } from '../editors/PhotoAdder';
+import { PhotoThumb } from '../components/PhotoThumb';
+import { PhotoViewer } from '../components/PhotoViewer';
+import { Badge, Card, EmptyState, PageHeader, ProgressBar, statusTone } from '../components/ui';
 import { dimensions } from './MeasurementsPage';
 
 type Editing =
   | { kind: 'room' }
   | { kind: 'measurement'; item?: Measurement }
   | { kind: 'design'; item?: Design }
-  | { kind: 'task' };
+  | { kind: 'task' }
+  | { kind: 'photo'; id: string };
 
 export function RoomDetailPage({ roomId }: { roomId: string }) {
   const { data } = useStore();
@@ -34,7 +38,7 @@ export function RoomDetailPage({ roomId }: { roomId: string }) {
   }
 
   const roomMeasurements = data.measurements.filter((m) => m.roomId === room.id);
-  const roomPhotos = data.photos.filter((p) => p.roomId === room.id);
+  const roomPhotos = data.photos.filter((p) => p.roomId === room.id).sort((a, b) => b.date.localeCompare(a.date));
   const roomDesigns = data.designs.filter((d) => d.roomId === room.id);
   const close = () => setEditing(null);
   const addLink = (label: string, e: Editing) => (
@@ -111,16 +115,26 @@ export function RoomDetailPage({ roomId }: { roomId: string }) {
           )}
         </Card>
 
-        <Card title="Photos" action={<a className="link" href={href('/photos')}>All</a>}>
+        <Card
+          title="Photos"
+          action={
+            <span className="card-actions">
+              {roomPhotos.length > 0 && <a className="link" href={href('/photos')}>All</a>}
+              <PhotoAdder roomId={room.id}>
+                {(open) => <button className="link" onClick={open}><Plus size={15} /> Add</button>}
+              </PhotoAdder>
+            </span>
+          }
+        >
           {roomPhotos.length === 0 ? (
             <EmptyState>No photos yet.</EmptyState>
           ) : (
             <div className="mini-photos">
               {roomPhotos.map((p) => (
-                <figure key={p.id}>
-                  <PhotoPlaceholder roomId={p.roomId} />
-                  <figcaption>{p.caption}</figcaption>
-                </figure>
+                <button key={p.id} type="button" className="mini-photo" onClick={() => setEditing({ kind: 'photo', id: p.id })}>
+                  <PhotoThumb photo={p} />
+                  <span className="mini-caption">{p.caption || p.tag}</span>
+                </button>
               ))}
             </div>
           )}
@@ -131,6 +145,7 @@ export function RoomDetailPage({ roomId }: { roomId: string }) {
       {editing?.kind === 'measurement' && <MeasurementEditor measurement={editing.item} roomId={room.id} onClose={close} />}
       {editing?.kind === 'design' && <DesignEditor design={editing.item} roomId={room.id} onClose={close} />}
       {editing?.kind === 'task' && <TaskEditor roomId={room.id} onClose={close} />}
+      {editing?.kind === 'photo' && <PhotoViewer photos={roomPhotos} startId={editing.id} onClose={close} />}
     </>
   );
 }

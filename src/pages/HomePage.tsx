@@ -5,6 +5,7 @@ import { daysUntil, formatDate, money } from '../format';
 import { href } from '../router';
 import { navItems } from '../components/Layout';
 import { TaskList } from '../components/TaskList';
+import { PhotoThumb } from '../components/PhotoThumb';
 import { TaskEditor } from '../editors/TaskEditor';
 import { ExpenseEditor } from '../editors/ExpenseEditor';
 import { Badge, Card, EmptyState, ProgressBar, Stat, statusTone } from '../components/ui';
@@ -28,6 +29,7 @@ export function HomePage() {
   const pendingDesigns = designs.filter((d) => d.status !== 'Approved');
   const recent = [...expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const moveInDays = daysUntil(project.targetMoveIn);
+  const latestPhotos = [...data.photos].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
 
   return (
     <>
@@ -115,6 +117,22 @@ export function HomePage() {
           )}
         </Card>
       </div>
+
+      {latestPhotos.length > 0 && (
+        <>
+          <div className="section-head">
+            <h2 className="section-title">Latest photos</h2>
+            <a className="link" href={href('/photos')}>All photos <ChevronRight size={15} /></a>
+          </div>
+          <div className="photo-strip">
+            {latestPhotos.map((p) => (
+              <a key={p.id} href={href('/photos')} aria-label={p.caption || 'Photo'}>
+                <PhotoThumb photo={p} />
+              </a>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="section-title">Quick access</h2>
       <div className="quick-grid">

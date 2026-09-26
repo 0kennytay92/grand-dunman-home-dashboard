@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { sampleData } from './sampleData';
 import type { AppData, Project } from './types';
+import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
 // ─────────────────────────────────────────────────────────────
 // THE STORE
@@ -77,6 +78,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [saveError, setSaveError] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+  const dataRef = useRef(data);
+  dataRef.current = data;
+
+  // Tidy up photo files left behind (e.g. if the app closed mid-delete).
+  useEffect(() => {
+    pruneImages(dataRef.current.photos.map((p) => p.id)).catch(() => {});
+  }, []);
 
   // Save after every change.
   useEffect(() => {
@@ -104,6 +112,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const remove = useCallback((name: CollectionName, id: string) => {
+    // Photo files are stored separately, so delete those too.
+    const photoIds =
+      name === 'photos' ? [id] : name === 'rooms' ? dataRef.current.photos.filter((p) => p.roomId === id).map((p) => p.id) : [];
+    deleteImages(photoIds).catch(() => {});
+
     setData((d) => {
       const next = { ...d, [name]: (d[name] as { id: string }[]).filter((x) => x.id !== id) };
       if (name === 'rooms') {
@@ -118,7 +131,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const updateProject = useCallback((project: Project) => setData((d) => ({ ...d, project })), []);
-  const replaceAll = useCallback((next: AppData) => setData(next), []);
+  const replaceAll = useCallback((next: AppData) => {
+    setData(next);
+    pruneImages(next.photos.map((p) => p.id)).catch(() => {});
+  }, []);
 
   const value = useMemo(
     () => ({ data, saveError, upsert, remove, updateProject, replaceAll, toast, notify }),
@@ -160,8 +176,15 @@ export function useBudgetTotals() {
 
 // ── Backup helpers ───────────────────────────────────────────
 
-export function downloadBackup(data: AppData) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+interface BackupFile extends AppData {
+  images?: ImageBundle;
+}
+
+/** Saves everything, photos included, as one .json file. */
+export async function downloadBackup(data: AppData) {
+  const images = await exportImages(data.photos.filter((p) => p.hasImage).map((p) => p.id));
+  const backup: BackupFile = { ...data, images };
+  const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -170,6 +193,17 @@ export function downloadBackup(data: AppData) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Reads a backup file and restores its photos. Returns the data to load. */
+export async function readBackup(text: string): Promise<AppData> {
+  const raw = JSON.parse(text) as BackupFile;
+  const data = parseData(raw);
+  if (raw.images && typeof raw.images === 'object') await importImages(raw.images);
+  // Photos whose file isn't in the backup fall back to a placeholder.
+  const restored = new Set(Object.keys(raw.images ?? {}));
+  data.photos = data.photos.map((p) => (p.hasImage && !restored.has(p.id) ? { ...p, hasImage: false } : p));
+  return data;
 }
 
 /** A clean slate: keeps the room list and budget categories, clears everything else. */

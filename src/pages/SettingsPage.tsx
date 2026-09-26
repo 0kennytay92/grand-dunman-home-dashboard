@@ -1,6 +1,7 @@
-import { useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Download, Upload, RotateCcw, Eraser } from 'lucide-react';
-import { blankData, downloadBackup, parseData, useStore } from '../data/store';
+import { blankData, downloadBackup, parseData, readBackup, useStore } from '../data/store';
+import { storageUsedMb } from '../data/images';
 import { sampleData } from '../data/sampleData';
 import { Card, PageHeader } from '../components/ui';
 import { DateInput, TextInput } from '../components/forms';
@@ -11,7 +12,26 @@ export function SettingsPage() {
   const [address, setAddress] = useState(data.project.address);
   const [moveIn, setMoveIn] = useState(data.project.targetMoveIn);
   const [importError, setImportError] = useState('');
+  const [busy, setBusy] = useState<'export' | 'import' | null>(null);
+  const [usedMb, setUsedMb] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const photoCount = data.photos.filter((p) => p.hasImage).length;
+
+  useEffect(() => {
+    storageUsedMb().then(setUsedMb).catch(() => {});
+  }, [data.photos]);
+
+  const onExport = async () => {
+    setBusy('export');
+    try {
+      await downloadBackup(data);
+      notify('Backup downloaded');
+    } catch {
+      window.alert('The backup could not be created. Please try again.');
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const saveProject = () => {
     updateProject({ name: name.trim() || 'Grand Dunman Home', address: address.trim(), targetMoveIn: moveIn || data.project.targetMoveIn });
@@ -23,9 +43,12 @@ export function SettingsPage() {
     e.target.value = '';
     if (!file) return;
     setImportError('');
+    setBusy('import');
     try {
-      const imported = parseData(JSON.parse(await file.text()));
+      const text = await file.text();
+      parseData(JSON.parse(text)); // check it's a real backup before asking
       if (!window.confirm('Replace everything in the app with this backup? Your current data will be overwritten.')) return;
+      const imported = await readBackup(text);
       replaceAll(imported);
       setName(imported.project.name);
       setAddress(imported.project.address);
@@ -33,11 +56,13 @@ export function SettingsPage() {
       notify('Backup imported');
     } catch (err) {
       setImportError(err instanceof SyntaxError ? 'This file is not a valid backup.' : (err as Error).message);
+    } finally {
+      setBusy(null);
     }
   };
 
   const reset = () => {
-    if (!window.confirm('Replace everything with the original sample data? Your own changes will be lost. (Tip: export a backup first.)')) return;
+    if (!window.confirm('Replace everything with the original sample data? Your own changes and photos will be lost. (Tip: export a backup first.)')) return;
     replaceAll(sampleData);
     setName(sampleData.project.name);
     setAddress(sampleData.project.address);
@@ -46,7 +71,7 @@ export function SettingsPage() {
   };
 
   const startFresh = () => {
-    if (!window.confirm('Start fresh? This keeps your room list and budget categories, but clears all measurements, payments, designs, photos and tasks, and sets room progress and budgets to zero.')) return;
+    if (!window.confirm('Start fresh? This keeps your room list and budget categories, but clears all measurements, payments, designs, photos (including your own) and tasks, and sets room progress and budgets to zero.')) return;
     replaceAll(blankData(data));
     notify('Ready for your own data');
   };
@@ -71,13 +96,18 @@ export function SettingsPage() {
           <p className="card-text">
             Your data lives only on this device. Your phone and computer each keep their own copy.
             Export a backup now and then, and keep it somewhere safe, like email or cloud storage.
+            The backup includes your photos.
+          </p>
+          <p className="card-text">
+            <strong>{photoCount}</strong> photo{photoCount === 1 ? '' : 's'} saved
+            {usedMb !== null && <> · about <strong>{usedMb < 1 ? '<1' : Math.round(usedMb)} MB</strong> used on this device</>}
           </p>
           <div className="button-stack">
-            <button className="btn btn-ghost" onClick={() => { downloadBackup(data); notify('Backup downloaded'); }}>
-              <Download size={16} /> Export backup
+            <button className="btn btn-ghost" onClick={onExport} disabled={busy !== null}>
+              <Download size={16} /> {busy === 'export' ? 'Preparing…' : 'Export backup'}
             </button>
-            <button className="btn btn-ghost" onClick={() => fileInput.current?.click()}>
-              <Upload size={16} /> Import backup
+            <button className="btn btn-ghost" onClick={() => fileInput.current?.click()} disabled={busy !== null}>
+              <Upload size={16} /> {busy === 'import' ? 'Importing…' : 'Import backup'}
             </button>
             <input ref={fileInput} type="file" accept=".json,application/json" hidden onChange={onImport} />
           </div>

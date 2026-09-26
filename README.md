@@ -10,6 +10,10 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
 - **Add, edit and delete** rooms, measurements, payments, budget categories, designs and tasks.
   Look for the **+ Add** buttons; tap any item to edit or delete it.
 - **Tick off tasks** on the Home page or on a room's page.
+- **Add real photos**: on the Photos page (or a room's page) tap **Add photos**. On iPhone you can
+  *Take Photo* or pick several from your *Photo Library*. Photos are shrunk automatically
+  (to about 1920 pixels) so they take little space. Tap a photo to see it full-screen;
+  swipe left/right to move between photos, and tap the pencil to edit or delete.
 - Everything is **saved automatically** on the device you are using.
 
 ## Where your data is saved (important)
@@ -18,9 +22,12 @@ Your data is saved **inside the browser on each device**. That means:
 
 - Your phone and your computer each keep **their own separate copy**.
 - Clearing your browser's history/website data, or using private browsing, can erase it.
-- **Export a backup regularly**: Settings & Backup → *Export backup*. Keep the file somewhere safe
+- **Export a backup regularly**: Settings & Backup → *Export backup*. The backup includes your photos. Keep the file somewhere safe
   (email it to yourself, or save it to iCloud/Google Drive).
 - To copy your data to another device: export on one, then *Import backup* on the other.
+
+On iPhone, adding the app to your Home Screen (Safari → Share → *Add to Home Screen*) and opening it
+from there helps stop Safari from clearing its storage if you haven't used it for a while.
 
 When you're ready to enter your real details, go to Settings & Backup → **Start fresh**.
 It keeps your list of rooms and budget categories but clears the example content.
@@ -88,6 +95,7 @@ Folder layout:
 src/
   data/types.ts        ← what information is stored
   data/store.tsx       ← keeps the data and saves it on the device
+  data/images.ts       ← stores photo files on the device (IndexedDB)
   data/sampleData.ts   ← example content
   pages/               ← one file per screen
   editors/             ← the add/edit forms
@@ -95,4 +103,4 @@ src/
   styles.css           ← the look and feel
 ```
 
-No database and no cloud hosting yet. Data is kept in the browser's own storage (localStorage).
+No database and no cloud hosting yet. Data is kept in the browser's own storage (localStorage for details, IndexedDB for photos).

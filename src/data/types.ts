@@ -31,6 +31,7 @@ export interface Photo {
   caption: string;
   date: string; // YYYY-MM-DD
   tag: PhotoTag;
+  hasImage?: boolean; // false for sample photos, which show a placeholder
 }
 
 export type DesignStatus = 'Draft' | 'Under review' | 'Approved';
