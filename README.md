@@ -67,6 +67,18 @@ It keeps your list of rooms and budget categories but clears the example content
 
 ---
 
+## Using it online
+
+The app is published at **https://0kennytay92.github.io/grand-dunman-home-dashboard/**
+and updates automatically a minute or two after each change is pushed to GitHub
+(see the *Actions* tab on GitHub for progress).
+
+- Your data is still stored **only on each device** (in that browser). Visitors to the link
+  see an empty copy with sample data — never your own information.
+- On iPhone: open the link in Safari → Share → **Add to Home Screen** for an app icon.
+- To move data from your computer's local copy (http://localhost:5173) to the online copy:
+  Settings & Backup → **Export backup** locally, then **Import backup** online.
+
 ## How to run it on your computer (one-time setup)
 
 1. **Install Node.js** (the engine that runs the app).

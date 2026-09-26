@@ -39,7 +39,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
       {/* Desktop / tablet sidebar */}
       <aside className="sidebar">
         <a className="brand" href={href('/')}>
-          <img src="/icon.svg" alt="" width={36} height={36} />
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={36} height={36} />
           <span>
             <strong>Grand Dunman</strong>
             <small>Home Renovation</small>
@@ -62,7 +62,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
       {/* Phone top bar */}
       <header className="topbar">
         <a className="brand" href={href('/')}>
-          <img src="/icon.svg" alt="" width={30} height={30} />
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" width={30} height={30} />
           <strong>{data.project.name}</strong>
         </a>
       </header>
