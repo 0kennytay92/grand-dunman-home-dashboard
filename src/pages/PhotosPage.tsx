@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { photos, type PhotoTag } from '../data/sampleData';
-import { formatDate, roomName } from '../format';
+import { useRoomName, useStore } from '../data/store';
+import type { PhotoTag } from '../data/types';
+import { formatDate } from '../format';
 import { Badge, Chips, EmptyState, PageHeader, PhotoPlaceholder, statusTone } from '../components/ui';
 
 const filters = ['All', 'Before', 'Progress', 'Inspiration'] as const;
 
 export function PhotosPage() {
+  const { photos } = useStore().data;
+  const roomName = useRoomName();
   const [filter, setFilter] = useState<(typeof filters)[number]>('All');
   const shown = [...photos]
     .filter((p) => filter === 'All' || p.tag === (filter as PhotoTag))

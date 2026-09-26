@@ -7,7 +7,8 @@ import { MeasurementsPage } from './pages/MeasurementsPage';
 import { PhotosPage } from './pages/PhotosPage';
 import { DesignsPage } from './pages/DesignsPage';
 import { BudgetPage } from './pages/BudgetPage';
-import { DefectsPage } from './pages/DefectsPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { StoreProvider } from './data/store';
 
 function Page({ path }: { path: string }) {
   const roomMatch = path.match(/^\/rooms\/([\w-]+)$/);
@@ -19,7 +20,7 @@ function Page({ path }: { path: string }) {
     case '/photos': return <PhotosPage />;
     case '/designs': return <DesignsPage />;
     case '/budget': return <BudgetPage />;
-    case '/defects': return <DefectsPage />;
+    case '/settings': return <SettingsPage />;
     default: return <HomePage />;
   }
 }
@@ -27,8 +28,10 @@ function Page({ path }: { path: string }) {
 export default function App() {
   const path = useRoute();
   return (
-    <Layout path={path}>
-      <Page path={path} />
-    </Layout>
+    <StoreProvider>
+      <Layout path={path}>
+        <Page path={path} />
+      </Layout>
+    </StoreProvider>
   );
 }

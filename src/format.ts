@@ -1,5 +1,3 @@
-import { rooms } from './data/sampleData';
-
 const sgd = new Intl.NumberFormat('en-SG', {
   style: 'currency',
   currency: 'SGD',
@@ -10,6 +8,9 @@ export const money = (n: number) => sgd.format(n);
 
 export const mm = (n: number) => n.toLocaleString('en-SG');
 
+/** "24 m²", or "" when the area hasn't been entered yet. */
+export const area = (sqm: number) => (sqm > 0 ? `${sqm.toLocaleString('en-SG')} m²` : '');
+
 export function formatDate(iso: string, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-SG', opts);
 }
@@ -19,14 +20,4 @@ export function daysUntil(iso: string) {
   today.setHours(0, 0, 0, 0);
   const target = new Date(`${iso}T00:00:00`);
   return Math.round((target.getTime() - today.getTime()) / 86_400_000);
-}
-
-export function roomName(roomId: string) {
-  const room = rooms.find((r) => r.id === roomId);
-  if (!room) return 'Whole home';
-  return room.includes ? `${room.name} & ${room.includes}` : room.name;
-}
-
-export function roomHue(roomId: string) {
-  return rooms.find((r) => r.id === roomId)?.hue ?? 35;
 }

@@ -1,104 +1,23 @@
 // ─────────────────────────────────────────────────────────────
 // SAMPLE DATA
-// Everything the app shows comes from this one file.
-// It is made-up example data — edit freely. Later this can be
-// replaced by a real database without changing the screens.
+// Made-up example content the app starts with. Once you begin
+// editing in the app, your own data is saved on your device and
+// this file is only used for "Reset to sample data".
 // ─────────────────────────────────────────────────────────────
 
-export type RoomStatus = 'Not started' | 'Planning' | 'In progress' | 'Completed';
-
-export interface Room {
-  id: string;
-  name: string;
-  includes?: string; // attached spaces, e.g. "Master Bath"
-  areaSqm: number;
-  status: RoomStatus;
-  progress: number; // 0–100
-  hue: number; // colour used for the room's placeholder artwork
-  notes: string;
-}
-
-export interface Measurement {
-  id: string;
-  roomId: string;
-  item: string;
-  widthMm?: number;
-  depthMm?: number;
-  heightMm?: number;
-  note?: string;
-}
-
-export type PhotoTag = 'Before' | 'Progress' | 'Inspiration';
-
-export interface Photo {
-  id: string;
-  roomId: string;
-  caption: string;
-  date: string; // YYYY-MM-DD
-  tag: PhotoTag;
-}
-
-export type DesignStatus = 'Draft' | 'Under review' | 'Approved';
-
-export interface Design {
-  id: string;
-  roomId: string;
-  title: string;
-  style: string;
-  designer: string;
-  status: DesignStatus;
-  palette: string[];
-  notes: string;
-}
-
-export interface BudgetCategory {
-  id: string;
-  name: string;
-  budget: number;
-  spent: number;
-}
-
-export interface Expense {
-  id: string;
-  date: string;
-  description: string;
-  categoryId: string;
-  vendor: string;
-  amount: number;
-}
-
-export type Severity = 'Low' | 'Medium' | 'High';
-export type DefectStatus = 'Open' | 'In progress' | 'Resolved';
-
-export interface Defect {
-  id: string;
-  roomId: string;
-  title: string;
-  description: string;
-  severity: Severity;
-  status: DefectStatus;
-  reportedOn: string;
-}
-
-export interface Task {
-  id: string;
-  title: string;
-  due: string;
-  roomId?: string;
-}
+import type { AppData, BudgetCategory, Design, Expense, Measurement, Photo, Project, Room, Task } from './types';
 
 // ── Project ──────────────────────────────────────────────────
 
-export const project = {
+const project: Project = {
   name: 'Grand Dunman Home',
   address: 'Grand Dunman, Dunman Road, Singapore',
-  keyCollection: '2026-08-15',
   targetMoveIn: '2027-01-10',
 };
 
 // ── Rooms ────────────────────────────────────────────────────
 
-export const rooms: Room[] = [
+const rooms: Room[] = [
   { id: 'lift-lobby', name: 'Private Lift Lobby', areaSqm: 5.5, status: 'Planning', progress: 15, hue: 30, notes: 'Feature wall and shoe cabinet planned.' },
   { id: 'living', name: 'Living Room', areaSqm: 28, status: 'In progress', progress: 45, hue: 38, notes: 'Hacking of false ceiling done; electrical points next.' },
   { id: 'dining', name: 'Dining Room', areaSqm: 14, status: 'In progress', progress: 40, hue: 24, notes: 'Pendant light position to be confirmed.' },
@@ -117,7 +36,7 @@ export const rooms: Room[] = [
 
 // ── Measurements (millimetres) ───────────────────────────────
 
-export const measurements: Measurement[] = [
+const measurements: Measurement[] = [
   { id: 'm1', roomId: 'lift-lobby', item: 'Floor area', widthMm: 2100, depthMm: 2600 },
   { id: 'm2', roomId: 'lift-lobby', item: 'Shoe cabinet wall', widthMm: 1800, heightMm: 2700 },
   { id: 'm3', roomId: 'living', item: 'Floor area', widthMm: 4800, depthMm: 5800 },
@@ -144,7 +63,7 @@ export const measurements: Measurement[] = [
 
 // ── Photos ───────────────────────────────────────────────────
 
-export const photos: Photo[] = [
+const photos: Photo[] = [
   { id: 'p1', roomId: 'living', caption: 'Living room at key collection', date: '2026-08-15', tag: 'Before' },
   { id: 'p2', roomId: 'living', caption: 'False ceiling hacked', date: '2026-09-12', tag: 'Progress' },
   { id: 'p3', roomId: 'master', caption: 'Wardrobe carcass delivered', date: '2026-09-20', tag: 'Progress' },
@@ -158,7 +77,7 @@ export const photos: Photo[] = [
 
 // ── Interior designs ─────────────────────────────────────────
 
-export const designs: Design[] = [
+const designs: Design[] = [
   { id: 'd1', roomId: 'living', title: 'Warm Minimal Living', style: 'Japandi', designer: 'Studio Oak & Stone', status: 'Approved', palette: ['#e9e2d6', '#c4a57f', '#7a6a58', '#2f2b27'], notes: 'Oak veneer TV console, linen curtains, cove lighting.' },
   { id: 'd2', roomId: 'dining', title: 'Dining Nook', style: 'Japandi', designer: 'Studio Oak & Stone', status: 'Under review', palette: ['#f1ece4', '#b89b76', '#5c5046'], notes: 'Round travertine table with fluted bench.' },
   { id: 'd3', roomId: 'dry-kitchen', title: 'Island Kitchen', style: 'Modern Luxe', designer: 'Studio Oak & Stone', status: 'Draft', palette: ['#f5f5f3', '#9aa3a6', '#3d4447', '#b08d57'], notes: 'Calacatta-look quartz, brushed brass handles.' },
@@ -169,17 +88,17 @@ export const designs: Design[] = [
 
 // ── Budget (Singapore dollars) ───────────────────────────────
 
-export const budgetCategories: BudgetCategory[] = [
-  { id: 'carpentry', name: 'Carpentry', budget: 45000, spent: 22500 },
-  { id: 'electrical', name: 'Electrical & Lighting', budget: 15000, spent: 6200 },
-  { id: 'flooring', name: 'Flooring & Tiling', budget: 18000, spent: 4800 },
-  { id: 'kitchen', name: 'Kitchen & Appliances', budget: 20000, spent: 3500 },
-  { id: 'bath', name: 'Bathrooms', budget: 12000, spent: 1800 },
-  { id: 'painting', name: 'Painting', budget: 5000, spent: 0 },
-  { id: 'furniture', name: 'Furniture & Decor', budget: 25000, spent: 2400 },
+const budgetCategories: BudgetCategory[] = [
+  { id: 'carpentry', name: 'Carpentry', budget: 45000 },
+  { id: 'electrical', name: 'Electrical & Lighting', budget: 15000 },
+  { id: 'flooring', name: 'Flooring & Tiling', budget: 18000 },
+  { id: 'kitchen', name: 'Kitchen & Appliances', budget: 20000 },
+  { id: 'bath', name: 'Bathrooms', budget: 12000 },
+  { id: 'painting', name: 'Painting', budget: 5000 },
+  { id: 'furniture', name: 'Furniture & Decor', budget: 25000 },
 ];
 
-export const expenses: Expense[] = [
+const expenses: Expense[] = [
   { id: 'e1', date: '2026-09-22', description: 'Master wardrobe – 2nd payment', categoryId: 'carpentry', vendor: 'Oak & Stone Carpentry', amount: 7500 },
   { id: 'e2', date: '2026-09-18', description: 'Wiring & new power points', categoryId: 'electrical', vendor: 'BrightSpark Electrical', amount: 3200 },
   { id: 'e3', date: '2026-09-15', description: 'Hob & hood deposit', categoryId: 'kitchen', vendor: 'KitchenPro SG', amount: 3500 },
@@ -190,23 +109,23 @@ export const expenses: Expense[] = [
   { id: 'e8', date: '2026-08-25', description: 'Dining chairs (4)', categoryId: 'furniture', vendor: 'Nordic Living', amount: 2400 },
 ];
 
-// ── Defects ──────────────────────────────────────────────────
-
-export const defects: Defect[] = [
-  { id: 'x1', roomId: 'living', title: 'Hairline crack on wall', description: 'Near the balcony sliding door, about 30 cm long.', severity: 'Medium', status: 'Open', reportedOn: '2026-08-16' },
-  { id: 'x2', roomId: 'master', title: 'Master Bath – grout gaps', description: 'Missing grout at shower floor corner.', severity: 'High', status: 'In progress', reportedOn: '2026-08-16' },
-  { id: 'x3', roomId: 'wet-kitchen', title: 'WC door does not close fully', description: 'Door rubs against frame at the top.', severity: 'Low', status: 'Open', reportedOn: '2026-08-17' },
-  { id: 'x4', roomId: 'bedroom-2', title: 'Window scratch', description: 'Scratch on glass panel, lower left.', severity: 'Low', status: 'Resolved', reportedOn: '2026-08-16' },
-  { id: 'x5', roomId: 'balcony', title: 'Uneven floor tile', description: 'One tile hollow sound near railing.', severity: 'Medium', status: 'Open', reportedOn: '2026-08-18' },
-  { id: 'x6', roomId: 'junior-master', title: 'Paint patch on ceiling', description: 'Visible touch-up mark above bed area.', severity: 'Low', status: 'In progress', reportedOn: '2026-08-18' },
-  { id: 'x7', roomId: 'dining', title: 'Power point loose', description: 'Wall socket plate not flush.', severity: 'High', status: 'Resolved', reportedOn: '2026-08-17' },
-];
-
 // ── Upcoming tasks (shown on Home) ───────────────────────────
 
-export const tasks: Task[] = [
+const tasks: Task[] = [
   { id: 't1', title: 'Confirm pendant light position', due: '2026-09-29', roomId: 'dining' },
   { id: 't2', title: 'Approve kitchen island drawing', due: '2026-10-02', roomId: 'dry-kitchen' },
-  { id: 't3', title: 'Developer defect re-inspection', due: '2026-10-06' },
+  { id: 't3', title: 'Book aircon installation', due: '2026-10-06' },
   { id: 't4', title: 'Select balcony tiles', due: '2026-10-10', roomId: 'balcony' },
 ];
+
+export const sampleData: AppData = {
+  version: 1,
+  project,
+  rooms,
+  measurements,
+  photos,
+  designs,
+  budgetCategories,
+  expenses,
+  tasks,
+};

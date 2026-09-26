@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Image } from 'lucide-react';
-import { roomHue } from '../format';
+import { useStore } from '../data/store';
 
 export function PageHeader({ eyebrow, title, subtitle, action }: { eyebrow?: string; title: string; subtitle?: string; action?: ReactNode }) {
   return (
@@ -69,7 +69,7 @@ export function Chips<T extends string>({ options, value, onChange }: { options:
 
 /** Stand-in artwork until real photos are added. */
 export function PhotoPlaceholder({ roomId, label }: { roomId: string; label?: string }) {
-  const hue = roomHue(roomId);
+  const hue = useStore().data.rooms.find((r) => r.id === roomId)?.hue ?? 35;
   return (
     <div
       className="photo-ph"
@@ -92,14 +92,9 @@ export const statusTone = {
   Planning: 'info',
   'In progress': 'warn',
   Completed: 'good',
-  Open: 'bad',
-  Resolved: 'good',
   Draft: 'neutral',
   'Under review': 'warn',
   Approved: 'good',
-  Low: 'neutral',
-  Medium: 'warn',
-  High: 'bad',
   Before: 'neutral',
   Progress: 'accent',
   Inspiration: 'info',

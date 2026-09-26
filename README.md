@@ -1,9 +1,29 @@
 # Grand Dunman Home
 
 A mobile-friendly dashboard for managing the renovation of our Grand Dunman home.
-This is **version 1: a working prototype using sample (made-up) data**.
+It starts with sample (made-up) data that you can edit, delete or clear.
 
-Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget · Defects
+Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget · Settings & Backup
+
+## What you can do
+
+- **Add, edit and delete** rooms, measurements, payments, budget categories, designs and tasks.
+  Look for the **+ Add** buttons; tap any item to edit or delete it.
+- **Tick off tasks** on the Home page or on a room's page.
+- Everything is **saved automatically** on the device you are using.
+
+## Where your data is saved (important)
+
+Your data is saved **inside the browser on each device**. That means:
+
+- Your phone and your computer each keep **their own separate copy**.
+- Clearing your browser's history/website data, or using private browsing, can erase it.
+- **Export a backup regularly**: Settings & Backup → *Export backup*. Keep the file somewhere safe
+  (email it to yourself, or save it to iCloud/Google Drive).
+- To copy your data to another device: export on one, then *Import backup* on the other.
+
+When you're ready to enter your real details, go to Settings & Backup → **Start fresh**.
+It keeps your list of rooms and budget categories but clears the example content.
 
 ---
 
@@ -38,16 +58,10 @@ When you run `npm run dev`, the terminal shows a line like `Network: http://192.
 Type that address into Safari on your iPhone.
 Tip: in Safari tap **Share → Add to Home Screen** to get an app-like icon.
 
-## Changing the sample data
+## The sample data
 
-All the example content (rooms, measurements, budget, defects, etc.) lives in one file:
-
-```
-src/data/sampleData.ts
-```
-
-Open it in any text editor, change a value (e.g. a budget amount), save, and the
-browser updates automatically.
+The example content lives in `src/data/sampleData.ts`. It is only used the first
+time the app opens, and when you press *Reset to sample data*.
 
 ## Checking for errors
 
@@ -72,10 +86,13 @@ Folder layout:
 
 ```
 src/
-  data/sampleData.ts   ← all sample content
+  data/types.ts        ← what information is stored
+  data/store.tsx       ← keeps the data and saves it on the device
+  data/sampleData.ts   ← example content
   pages/               ← one file per screen
-  components/          ← shared pieces (navigation, cards, badges)
+  editors/             ← the add/edit forms
+  components/          ← shared pieces (navigation, cards, form fields)
   styles.css           ← the look and feel
 ```
 
-No database and no cloud hosting yet — everything runs on your own computer.
+No database and no cloud hosting yet. Data is kept in the browser's own storage (localStorage).
