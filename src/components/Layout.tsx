@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Home, DoorOpen, Ruler, Camera, Palette, Wallet, Settings, Ellipsis, X, CircleCheck, TriangleAlert } from 'lucide-react';
+import { Home, DoorOpen, Map as MapIcon, Ruler, Camera, Palette, Wallet, Settings, Ellipsis, X, CircleCheck, TriangleAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { href } from '../router';
 import { useStore } from '../data/store';
@@ -13,6 +13,7 @@ interface NavItem {
 export const navItems: NavItem[] = [
   { path: '/', label: 'Home', icon: Home },
   { path: '/rooms', label: 'Rooms', icon: DoorOpen },
+  { path: '/floor-plan', label: 'Floor Plan', icon: MapIcon },
   { path: '/measurements', label: 'Measurements', icon: Ruler },
   { path: '/photos', label: 'Photos', icon: Camera },
   { path: '/designs', label: 'Interior Designs', icon: Palette },

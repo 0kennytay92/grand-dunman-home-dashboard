@@ -28,6 +28,14 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
     design; the biggest picture is the render, others become reference images, the slide title
     becomes the name and the room is guessed from it. A "Prompt:" line on the slide, or the
     speaker notes, becomes the design prompt. Nothing is uploaded — it all happens on your device.
+- **Floor Plan** (menu → Floor Plan): your Type 4BR G1 layout with every room's *measured*
+  width × length drawn to scale on top. Outlines are green when they match the plan (within 5%)
+  and amber when they differ; they update as soon as you change a measurement. Tap a room to
+  update its width or length right there. Width = left ↔ right on the plan, length = top ↕ bottom.
+  A table below lists plan vs measured for every room.
+- **Design files** (Interior Designs → Import designs → a `.json` design file) add ready-made
+  designs with their pictures, and optionally your floor plan drawing. They are *added* to what you
+  have (nothing is replaced), and importing the same file again updates rather than duplicates.
 - **Tick off tasks** on the Home page or on a room's page.
 - **Add real photos**: in a room's Photos tab (or the Photos page) tap **Add Photo**. On iPhone you can
   *Take Photo* or pick from your *Photo Library*. Each photo has a room, date, description and
@@ -127,6 +135,8 @@ src/
   data/photoTags.ts    ← photo categories
   data/designs.ts      ← design statuses and versions
   data/pptx.ts         ← reads renders out of PowerPoint files
+  data/designPack.ts   ← imports ready-made design files
+  data/floorPlanLayout.ts ← where each room sits on the Type 4BR G1 plan
   data/sampleData.ts   ← example content
   pages/               ← one file per screen
   pages/room/          ← the room page and its five tabs

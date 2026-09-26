@@ -894,3 +894,103 @@ input[type='date'].input { -webkit-appearance: none; appearance: none; }
 }
 /* One line each, so the footer (and therefore the photo) never changes size */
 .viewer-caption, .viewer-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Floor plan ───────────────────────────────────────────── */
+
+.zoom { display: flex; align-items: center; gap: 6px; }
+.zoom .chips { margin-bottom: 0; }
+.zoom .icon-btn:disabled { opacity: 0.4; cursor: default; }
+@media (max-width: 560px) { .zoom { width: 100%; justify-content: space-between; } }
+
+.fp-scroll {
+  overflow: auto; -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--shadow);
+}
+.fp-canvas { position: relative; min-width: 100%; }
+.fp-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Rooms (schematic) */
+.fp-room { cursor: pointer; }
+.fp-room rect { fill: var(--surface-2); stroke: var(--ink-3); stroke-width: 40; transition: fill 0.15s; }
+.fp-room:hover rect { fill: var(--accent-soft); }
+.fp-room.fit-match rect { fill: var(--good-soft); }
+.fp-room.fit-differs rect { fill: var(--warn-soft); }
+.fp-common { fill: none; stroke: var(--line); stroke-width: 40; stroke-dasharray: 120 90; }
+/* Over the real drawing, rooms become light tints so the drawing shows through */
+.with-drawing .fp-room rect { fill-opacity: 0.28; stroke-opacity: 0.55; stroke-width: 30; }
+.with-drawing .fp-room.fit-none rect { fill: transparent; }
+.with-drawing { background: #fff; }
+
+/* Measured size outline, drawn to scale */
+.fp-measured { fill: none; stroke-width: 70; stroke-dasharray: 220 110; pointer-events: none; vector-effect: none; }
+.fp-measured.fit-match { stroke: var(--good); }
+.fp-measured.fit-differs { stroke: var(--warn); }
+
+.fp-common-label {
+  position: absolute; display: flex; align-items: center; justify-content: center; pointer-events: none;
+  font-size: clamp(8px, 1.1vw, 12px); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; text-align: center;
+}
+.fp-label {
+  position: absolute; padding: 0; border: 0; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.fp-label-inner {
+  display: flex; flex-direction: column; align-items: center; gap: 1px; max-width: 96%;
+  padding: 3px 7px; border-radius: 8px; line-height: 1.2; text-align: center;
+  background: color-mix(in srgb, var(--surface) 88%, transparent); box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
+}
+.fp-label strong { font-size: clamp(9px, 1.15vw, 13px); font-weight: 650; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.fp-size { font-size: clamp(8.5px, 1.05vw, 12px); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fp-label.fit-match .fp-size { color: var(--good); }
+.fp-label.fit-differs .fp-size { color: var(--warn); }
+.fp-size.plan { color: var(--ink-3); font-weight: 500; }
+.fp-label:hover .fp-label-inner, .fp-label:focus-visible .fp-label-inner { outline: 2px solid var(--accent); }
+
+.fp-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin: 12px 2px 18px; font-size: 13px; color: var(--ink-2); }
+.fp-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.lg { width: 18px; height: 12px; border-radius: 3px; border: 2px dashed; }
+.lg.match { border-color: var(--good); background: var(--good-soft); }
+.lg.differs { border-color: var(--warn); background: var(--warn-soft); }
+.lg.none { border: 1.5px solid var(--ink-3); background: var(--surface-2); }
+
+/* Measured vs plan table */
+.fp-table { display: flex; flex-direction: column; }
+.fp-row {
+  display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 8px; align-items: center;
+  padding: 10px 0; border: 0; border-top: 1px solid var(--line); background: none;
+  text-align: left; font: inherit; font-size: 14px; color: inherit; cursor: pointer; width: 100%;
+}
+.fp-row.head { cursor: default; border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+button.fp-row:hover .fp-room-cell { color: var(--accent); }
+.fp-room-cell { display: flex; align-items: center; gap: 8px; font-weight: 550; }
+.diff.fit-match { color: var(--good); }
+.diff.fit-differs { color: var(--warn); font-weight: 600; }
+@media (max-width: 560px) {
+  .fp-row { grid-template-columns: 1fr 1fr; row-gap: 2px; }
+  .fp-row.head { display: none; }
+  .fp-row > :nth-child(2)::before { content: 'Plan '; color: var(--ink-3); }
+  .fp-row > :nth-child(3)::before { content: 'Measured '; color: var(--ink-3); }
+  .fp-row > :nth-child(2), .fp-row > :nth-child(3), .fp-row > :nth-child(4) { font-size: 13px; }
+}
+.fp-off { margin-top: 10px; }
+
+.fit-icon { width: 18px; height: 18px; flex-shrink: 0; border-radius: 50%; display: inline-grid; place-items: center; color: #fff; }
+.fit-icon.match { background: var(--good); }
+.fit-icon.differs { background: var(--warn); }
+.fit-icon.none { border: 2px solid var(--ink-3); }
+
+.size-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.size-tile .diff { font-size: 12.5px; font-weight: 600; }
+.fp-verdict { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; color: var(--ink-2); }
+.fp-verdict .fit-icon { margin-top: 1px; }
+
+/* Design file import */
+.pack-rooms { display: flex; flex-direction: column; gap: 8px; }
+.pack-room { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.pack-room .select { width: 48%; min-width: 0; }
+@media (max-width: 480px) { .pack-room { flex-direction: column; align-items: stretch; } .pack-room .select { width: 100%; } }
+/* Long product links wrap instead of running off the card; line breaks in descriptions are kept */
+.notes-text, .compare-notes, .prompt-text, .compare-prompt p { overflow-wrap: anywhere; }
+.compare-notes { white-space: pre-line; }
+.inline-link { display: inline; font-size: inherit; font-weight: 600; white-space: normal; word-break: break-all; }

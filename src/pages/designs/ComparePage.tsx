@@ -6,6 +6,7 @@ import { useImageUrl } from '../../data/images';
 import type { Design, DesignStatus } from '../../data/types';
 import { formatDate } from '../../format';
 import { DesignImage } from '../../components/DesignCard';
+import { LinkedText } from '../../components/LinkedText';
 import { Chips, EmptyState, PageHeader } from '../../components/ui';
 import { tabHref } from '../room/tabs';
 import { designHref } from './links';
@@ -80,7 +81,7 @@ export function ComparePage({ roomId }: { roomId: string }) {
                 >
                   {designStatuses.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
-                {d.notes && <p className="compare-notes">{d.notes}</p>}
+                {d.notes && <p className="compare-notes"><LinkedText text={d.notes} /></p>}
                 {d.prompt && (
                   <details className="compare-prompt">
                     <summary>Prompt</summary>

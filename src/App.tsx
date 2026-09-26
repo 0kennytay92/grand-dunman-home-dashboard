@@ -10,6 +10,7 @@ import { DesignDetailPage } from './pages/designs/DesignDetailPage';
 import { ComparePage } from './pages/designs/ComparePage';
 import { BudgetPage } from './pages/BudgetPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { FloorPlanPage } from './pages/FloorPlanPage';
 import { StoreProvider } from './data/store';
 
 function Page({ path }: { path: string }) {
@@ -23,6 +24,7 @@ function Page({ path }: { path: string }) {
 
   switch (path) {
     case '/rooms': return <RoomsPage />;
+    case '/floor-plan': return <FloorPlanPage />;
     case '/measurements': return <MeasurementsPage />;
     case '/photos': return <PhotosPage />;
     case '/designs': return <DesignsPage />;

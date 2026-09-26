@@ -25,8 +25,9 @@ export function nextVersion(designs: Design[], roomId: string, title: string) {
 }
 
 /** Every stored image id in use: photos, design renders and reference images. */
-export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs'>) {
+export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan'>) {
   return [
+    ...(data.floorPlan ? [data.floorPlan.imageId] : []),
     ...data.photos.filter((p) => p.hasImage).map((p) => p.id),
     ...data.designs.filter((d) => d.hasImage).map((d) => d.id),
     ...data.designs.flatMap((d) => d.referenceIds),

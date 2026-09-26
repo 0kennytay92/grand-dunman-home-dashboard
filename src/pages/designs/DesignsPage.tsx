@@ -42,7 +42,7 @@ export function DesignsPage() {
         subtitle={`${designs.length} designs · ${selected} selected`}
         action={
           <div className="header-actions">
-            <button className="btn btn-ghost" onClick={() => setImporting(true)}><FileUp size={16} /> Import from PowerPoint</button>
+            <button className="btn btn-ghost" onClick={() => setImporting(true)}><FileUp size={16} /> Import designs</button>
             <button className="btn btn-primary" onClick={() => setAdding({ roomId: roomId === 'all' ? undefined : roomId })}><Plus size={17} /> Add design</button>
           </div>
         }

@@ -163,7 +163,7 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-function dataUrlToBlob(dataUrl: string): Blob {
+export function dataUrlToBlob(dataUrl: string): Blob {
   const [head, body] = dataUrl.split(',');
   const mime = head.match(/data:(.*?);/)?.[1] ?? 'image/jpeg';
   const bin = atob(body);

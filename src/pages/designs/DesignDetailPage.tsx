@@ -10,6 +10,7 @@ import { href } from '../../router';
 import { DesignEditor } from '../../editors/DesignEditor';
 import { DesignCard, DesignImage } from '../../components/DesignCard';
 import { ImageLightbox } from '../../components/ImageLightbox';
+import { LinkedText } from '../../components/LinkedText';
 import { Card, EmptyState } from '../../components/ui';
 import { tabHref } from '../room/tabs';
 import { compareHref, designHref } from './links';
@@ -92,7 +93,7 @@ export function DesignDetailPage({ designId }: { designId: string }) {
           </Card>
 
           <Card title="Description">
-            {d.notes ? <p className="notes-text">{d.notes}</p> : <EmptyState>No description yet.</EmptyState>}
+            {d.notes ? <p className="notes-text"><LinkedText text={d.notes} /></p> : <EmptyState>No description yet.</EmptyState>}
           </Card>
 
           <Card

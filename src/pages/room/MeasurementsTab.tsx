@@ -4,6 +4,8 @@ import { useStore } from '../../data/store';
 import { formatMeasurement, inUnit, kindInfo, listKinds, roomSize, singleKinds, units } from '../../data/measurementKinds';
 import { useUnit } from '../../data/useUnit';
 import type { Measurement, MeasurementKind, Room } from '../../data/types';
+import { planRooms } from '../../data/floorPlanLayout';
+import { href } from '../../router';
 import { MeasurementEditor } from '../../editors/MeasurementEditor';
 import { Card, Chips, EmptyState } from '../../components/ui';
 
@@ -25,7 +27,7 @@ export function MeasurementsTab({ room }: { room: Room }) {
         </button>
       </div>
 
-      <Card title="Room size">
+      <Card title="Room size" action={planRooms[room.id] ? <a className="link" href={href('/floor-plan')}>View on floor plan</a> : undefined}>
         <div className="size-grid">
           {singleKinds.map((k) => {
             const m = singles[k as keyof typeof singles];
@@ -46,6 +48,7 @@ export function MeasurementsTab({ room }: { room: Room }) {
             'Add the room width and length to work out the floor area.'
           )}
         </p>
+        {planRooms[room.id] && <p className="row-sub">Width = left ↔ right on the floor plan, length = top ↕ bottom.</p>}
       </Card>
 
       <div className="grid-2">

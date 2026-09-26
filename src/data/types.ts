@@ -91,6 +91,16 @@ export interface Project {
   targetMoveIn: string;
 }
 
+/** A floor plan drawing stored on the device, with where the plan's origin is and its scale. */
+export interface FloorPlanImage {
+  imageId: string;
+  width: number; // pixels
+  height: number;
+  originX: number; // pixel position of the layout's (0, 0) corner
+  originY: number;
+  pxPerMm: number;
+}
+
 /** Everything the app stores, in one bundle. */
 export interface AppData {
   version: 1;
@@ -102,4 +112,5 @@ export interface AppData {
   budgetCategories: BudgetCategory[];
   expenses: Expense[];
   tasks: Task[];
+  floorPlan?: FloorPlanImage;
 }

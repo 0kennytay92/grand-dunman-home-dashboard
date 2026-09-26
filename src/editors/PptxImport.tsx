@@ -6,6 +6,8 @@ import { nextVersion } from '../data/designs';
 import { newId, todayIso, useRoomName, useStore } from '../data/store';
 import type { Design } from '../data/types';
 import { EditorModal } from '../components/forms';
+import { parsePack, type DesignPack } from '../data/designPack';
+import { PackImport } from './PackImport';
 
 interface Row {
   slide: SlideInfo;
@@ -15,7 +17,8 @@ interface Row {
 }
 
 /**
- * Brings renders in from a PowerPoint deck: each slide with a picture becomes a design
+ * Imports designs from a design file (.json) or a PowerPoint deck (.pptx).
+ * PowerPoint: each slide with a picture becomes a design
  * (its largest picture is the render; any others become reference images).
  */
 export function PptxImport({ onClose }: { onClose: () => void }) {
@@ -27,12 +30,17 @@ export function PptxImport({ onClose }: { onClose: () => void }) {
   const [reading, setReading] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [pack, setPack] = useState<DesignPack | null>(null);
 
   const pick = async (file: File) => {
     setError('');
     setReading(true);
     setFileName(file.name);
     try {
+      if (/\.json$/i.test(file.name) || file.type === 'application/json') {
+        setPack(parsePack(await file.text()));
+        return;
+      }
       const slides = (await readPptx(file)).filter((s) => s.images.length > 0);
       if (!slides.length) throw new Error('No pictures were found in this presentation.');
       let lastRoom = '';
@@ -107,9 +115,11 @@ export function PptxImport({ onClose }: { onClose: () => void }) {
     else onClose();
   };
 
+  if (pack) return <PackImport pack={pack} fileName={fileName} onClose={onClose} />;
+
   return (
     <EditorModal
-      title="Import from PowerPoint"
+      title="Import designs"
       onClose={progress ? () => {} : onClose}
       onSave={rows ? doImport : () => input.current?.click()}
       saveLabel={rows ? `Import ${chosen.length} design${chosen.length === 1 ? '' : 's'}` : 'Choose file'}
@@ -117,13 +127,14 @@ export function PptxImport({ onClose }: { onClose: () => void }) {
       {!rows ? (
         <>
           <p className="card-text">
-            Choose your renders presentation (<strong>.pptx</strong>). From Google Slides, use <em>File → Download → Microsoft PowerPoint</em> first.
+            Choose a <strong>design file</strong> (.json) or your renders presentation (<strong>.pptx</strong>).
+            Design files add ready-made designs with their pictures. From Google Slides, use <em>File → Download → Microsoft PowerPoint</em> first.
             Each slide with a picture becomes a design; the biggest picture is the render and any others become reference images.
             Everything stays on this device.
           </p>
           <button type="button" className="render-empty" onClick={() => input.current?.click()} disabled={reading}>
             <FileUp size={26} />
-            <span>{reading ? `Reading ${fileName}…` : 'Choose PowerPoint file'}</span>
+            <span>{reading ? `Reading ${fileName}…` : 'Choose file'}</span>
           </button>
         </>
       ) : (
@@ -161,7 +172,7 @@ export function PptxImport({ onClose }: { onClose: () => void }) {
           </ul>
         </>
       )}
-      <input ref={input} type="file" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); e.target.value = ''; }} />
+      <input ref={input} type="file" accept=".pptx,.json,application/json,application/vnd.openxmlformats-officedocument.presentationml.presentation" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); e.target.value = ''; }} />
       {progress && <p className="upload-status">{progress}</p>}
       {error && <p className="field-msg">{error}</p>}
     </EditorModal>

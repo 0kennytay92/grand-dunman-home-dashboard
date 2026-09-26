@@ -15,7 +15,7 @@ import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle
 const STORAGE_KEY = 'grand-dunman-home:data';
 
 /** The lists the app lets you add to, edit and delete from. */
-type Collections = Omit<AppData, 'version' | 'project'>;
+type Collections = Omit<AppData, 'version' | 'project' | 'floorPlan'>;
 export type CollectionName = keyof Collections;
 type ItemOf<K extends CollectionName> = Collections[K][number];
 
@@ -46,6 +46,8 @@ export function parseData(raw: unknown): AppData {
   }
   data.measurements = upgradeMeasurements(data.measurements);
   data.designs = upgradeDesigns(data.designs);
+  const fp = obj.floorPlan;
+  if (fp && typeof fp.imageId === 'string' && fp.pxPerMm > 0) data.floorPlan = fp;
   // Photo categories were renamed; convert ones saved by earlier versions.
   const oldTags: Record<string, PhotoTag> = { Before: 'Existing Condition', Progress: 'Renovation Progress', Inspiration: 'Design Reference' };
   data.photos = data.photos.map((p) => (oldTags[p.tag] ? { ...p, tag: oldTags[p.tag] } : p));
@@ -72,6 +74,8 @@ interface Store {
   saveError: boolean;
   upsert: <K extends CollectionName>(name: K, item: ItemOf<K>) => void;
   remove: (name: CollectionName, id: string) => void;
+  /** Changes several things at once, e.g. when importing. */
+  update: (change: (d: AppData) => AppData) => void;
   updateProject: (project: Project) => void;
   replaceAll: (data: AppData) => void;
   toast: string | null;
@@ -147,6 +151,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const update = useCallback((change: (d: AppData) => AppData) => setData(change), []);
   const updateProject = useCallback((project: Project) => setData((d) => ({ ...d, project })), []);
   const replaceAll = useCallback((next: AppData) => {
     setData(next);
@@ -154,8 +159,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ data, saveError, upsert, remove, updateProject, replaceAll, toast, notify }),
-    [data, saveError, upsert, remove, updateProject, replaceAll, toast, notify],
+    () => ({ data, saveError, upsert, remove, update, updateProject, replaceAll, toast, notify }),
+    [data, saveError, upsert, remove, update, updateProject, replaceAll, toast, notify],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
@@ -220,6 +225,7 @@ export async function readBackup(text: string): Promise<AppData> {
   // Photos whose file isn't in the backup fall back to a placeholder.
   const restored = new Set(Object.keys(raw.images ?? {}));
   data.photos = data.photos.map((p) => (p.hasImage && !restored.has(p.id) ? { ...p, hasImage: false } : p));
+  if (data.floorPlan && !restored.has(data.floorPlan.imageId)) data.floorPlan = undefined;
   data.designs = data.designs.map((d) => ({
     ...d,
     hasImage: d.hasImage && restored.has(d.id),
