@@ -95,7 +95,8 @@ export const statusTone = {
   Draft: 'neutral',
   'Under review': 'warn',
   Approved: 'good',
-  Before: 'neutral',
-  Progress: 'accent',
-  Inspiration: 'info',
+  'Existing Condition': 'neutral',
+  Measurement: 'info',
+  'Design Reference': 'accent',
+  'Renovation Progress': 'warn',
 } as const satisfies Record<string, Tone>;

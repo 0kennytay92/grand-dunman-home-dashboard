@@ -67,7 +67,7 @@ export function MeasurementsTab({ room }: { room: Room }) {
                       <button className="list-row wrap row-button" onClick={() => setEditing({ item: m })}>
                         <div className="grow">
                           <p className="row-title">{m.item}</p>
-                          {m.note && <p className="row-sub">{m.note}</p>}
+                          {(m.note || m.pin) && <p className="row-sub">{[m.pin && 'On a photo', m.note].filter(Boolean).join(' · ')}</p>}
                         </div>
                         <span className="dims mono">{formatMeasurement(m, unit)}</span>
                       </button>

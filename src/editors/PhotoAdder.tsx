@@ -3,10 +3,13 @@ import { putImages, processPhoto, requestPersistentStorage } from '../data/image
 import { newId, todayIso, useRoomName, useStore } from '../data/store';
 import type { PhotoTag } from '../data/types';
 import { DateInput, EditorModal, FieldRow, SelectInput, TextInput } from '../components/forms';
-import { photoTags } from './PhotoEditor';
+import { photoTags } from '../data/photoTags';
+
+// The category chosen last time is suggested for the next photo.
+let lastTag: PhotoTag = 'Existing Condition';
 
 /**
- * Wraps an "Add photos" button. Tapping it opens the phone's
+ * Wraps an "Add Photo" button. Tapping it opens the phone's
  * Take Photo / Photo Library picker, then a short form to label the photos.
  */
 export function PhotoAdder({ roomId, children }: { roomId?: string; children: (open: () => void) => ReactNode }) {
@@ -36,7 +39,7 @@ function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: s
   const { data, upsert, notify } = useStore();
   const roomName = useRoomName();
   const [room, setRoom] = useState(roomId ?? data.rooms[0]?.id ?? '');
-  const [tag, setTag] = useState<PhotoTag>('Progress');
+  const [tag, setTag] = useState<PhotoTag>(lastTag);
   const [caption, setCaption] = useState('');
   const [date, setDate] = useState(todayIso());
   const [progress, setProgress] = useState<number | null>(null);
@@ -56,6 +59,7 @@ function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: s
       return;
     }
     setError('');
+    lastTag = tag;
     requestPersistentStorage();
     let saved = 0;
     const failed: string[] = [];
@@ -88,10 +92,10 @@ function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: s
       </div>
       <SelectInput label="Room" value={room} onChange={setRoom} options={data.rooms.map((r) => ({ value: r.id, label: roomName(r.id) }))} />
       <FieldRow>
-        <SelectInput label="Type" value={tag} onChange={(v) => setTag(v as PhotoTag)} options={photoTags.map((t) => ({ value: t, label: t }))} />
+        <SelectInput label="Category" value={tag} onChange={(v) => setTag(v as PhotoTag)} options={photoTags.map((t) => ({ value: t, label: t }))} />
         <DateInput label="Date taken" value={date} onChange={setDate} />
       </FieldRow>
-      <TextInput label="Caption (optional)" value={caption} onChange={setCaption} placeholder="e.g. Wardrobe carcass delivered" hint={n > 1 ? 'Used for all selected photos. You can change each one later.' : undefined} />
+      <TextInput label="Description" value={caption} onChange={setCaption} placeholder="e.g. Dining wall before hacking" hint={n > 1 ? 'Used for all selected photos. You can change each one later.' : undefined} />
       {progress !== null && <p className="upload-status">Saving photo {progress} of {n}…</p>}
       {error && <p className="field-msg">{error}</p>}
     </EditorModal>

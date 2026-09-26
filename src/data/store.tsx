@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { sampleData } from './sampleData';
-import type { AppData, Project } from './types';
+import type { AppData, PhotoTag, Project } from './types';
 import { upgradeMeasurements } from './measurementKinds';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
@@ -44,6 +44,9 @@ export function parseData(raw: unknown): AppData {
     (data[k] as unknown[]) = list ?? [];
   }
   data.measurements = upgradeMeasurements(data.measurements);
+  // Photo categories were renamed; convert ones saved by earlier versions.
+  const oldTags: Record<string, PhotoTag> = { Before: 'Existing Condition', Progress: 'Renovation Progress', Inspiration: 'Design Reference' };
+  data.photos = data.photos.map((p) => (oldTags[p.tag] ? { ...p, tag: oldTags[p.tag] } : p));
   return data;
 }
 
@@ -121,6 +124,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
     setData((d) => {
       const next = { ...d, [name]: (d[name] as { id: string }[]).filter((x) => x.id !== id) };
+      if (name === 'photos') {
+        // Measurements shown on the photo stay in the room; they just lose their label position.
+        next.measurements = d.measurements.map((m) => (m.pin?.photoId === id ? { ...m, pin: undefined } : m));
+      }
       if (name === 'rooms') {
         // A deleted room takes its measurements, photos and designs with it.
         next.measurements = d.measurements.filter((m) => m.roomId !== id);

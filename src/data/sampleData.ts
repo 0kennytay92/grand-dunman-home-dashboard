@@ -97,15 +97,15 @@ const measurements: Measurement[] = [
 // ── Photos ───────────────────────────────────────────────────
 
 const photos: Photo[] = [
-  { id: 'p1', roomId: 'living', caption: 'Living room at key collection', date: '2026-08-15', tag: 'Before' },
-  { id: 'p2', roomId: 'living', caption: 'False ceiling hacked', date: '2026-09-12', tag: 'Progress' },
-  { id: 'p3', roomId: 'master', caption: 'Wardrobe carcass delivered', date: '2026-09-20', tag: 'Progress' },
-  { id: 'p4', roomId: 'dry-kitchen', caption: 'Quartz island inspiration', date: '2026-08-28', tag: 'Inspiration' },
-  { id: 'p5', roomId: 'balcony', caption: 'Balcony view at key collection', date: '2026-08-15', tag: 'Before' },
-  { id: 'p6', roomId: 'lift-lobby', caption: 'Fluted panel feature wall idea', date: '2026-09-01', tag: 'Inspiration' },
-  { id: 'p7', roomId: 'wet-kitchen', caption: 'Wall tiles removed', date: '2026-09-18', tag: 'Progress' },
-  { id: 'p8', roomId: 'junior-master', caption: 'Junior Master empty room', date: '2026-08-15', tag: 'Before' },
-  { id: 'p9', roomId: 'dining', caption: 'Pendant light reference', date: '2026-09-05', tag: 'Inspiration' },
+  { id: 'p1', roomId: 'living', caption: 'Living room at key collection', date: '2026-08-15', tag: 'Existing Condition' },
+  { id: 'p2', roomId: 'living', caption: 'False ceiling hacked', date: '2026-09-12', tag: 'Renovation Progress' },
+  { id: 'p3', roomId: 'master', caption: 'Wardrobe carcass delivered', date: '2026-09-20', tag: 'Renovation Progress' },
+  { id: 'p4', roomId: 'dry-kitchen', caption: 'Quartz island inspiration', date: '2026-08-28', tag: 'Design Reference' },
+  { id: 'p5', roomId: 'balcony', caption: 'Balcony view at key collection', date: '2026-08-15', tag: 'Existing Condition' },
+  { id: 'p6', roomId: 'lift-lobby', caption: 'Fluted panel feature wall idea', date: '2026-09-01', tag: 'Design Reference' },
+  { id: 'p7', roomId: 'wet-kitchen', caption: 'Wall tiles removed', date: '2026-09-18', tag: 'Renovation Progress' },
+  { id: 'p8', roomId: 'junior-master', caption: 'Junior Master empty room', date: '2026-08-15', tag: 'Existing Condition' },
+  { id: 'p9', roomId: 'dining', caption: 'Pendant light reference', date: '2026-09-05', tag: 'Design Reference' },
 ];
 
 // ── Interior designs ─────────────────────────────────────────

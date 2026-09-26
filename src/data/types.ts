@@ -27,16 +27,19 @@ export interface Measurement {
   heightMm?: number; // ceiling height is stored here
   sillMm?: number; // windows: height of the window's bottom edge above the floor
   note?: string;
+  /** Shown as a label on a photo. x and y are 0–1 across/down the picture. The photo itself is never changed. */
+  pin?: { photoId: string; x: number; y: number };
 }
 
-export type PhotoTag = 'Before' | 'Progress' | 'Inspiration';
+/** A photo's category. */
+export type PhotoTag = 'Existing Condition' | 'Measurement' | 'Design Reference' | 'Renovation Progress';
 
 export interface Photo {
   id: string;
   roomId: string;
-  caption: string;
+  caption: string; // shown as "Description"
   date: string; // YYYY-MM-DD
-  tag: PhotoTag;
+  tag: PhotoTag; // shown as "Category"
   hasImage?: boolean; // false for sample photos, which show a placeholder
 }
 

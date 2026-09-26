@@ -18,10 +18,16 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
   - **Designs**: design ideas for the room
   - **Budget**: a planned budget for the room, and the payments linked to it
 - **Tick off tasks** on the Home page or on a room's page.
-- **Add real photos**: on the Photos page (or a room's page) tap **Add photos**. On iPhone you can
-  *Take Photo* or pick several from your *Photo Library*. Photos are shrunk automatically
-  (to about 1920 pixels) so they take little space. Tap a photo to see it full-screen;
-  swipe left/right to move between photos, and tap the pencil to edit or delete.
+- **Add real photos**: in a room's Photos tab (or the Photos page) tap **Add Photo**. On iPhone you can
+  *Take Photo* or pick from your *Photo Library*. Each photo has a room, date, description and
+  category (Existing Condition, Measurement, Design Reference, Renovation Progress).
+  Photos are shrunk automatically (to about 1920 pixels) so they take little space.
+  Tap a photo to see it full-screen; swipe left/right to move between photos.
+- **Measure on photos**: while viewing a photo, tap **Add measurement**, tap the spot on the photo,
+  then type a name (e.g. "Dining wall") and the width/height in mm. A label appears on the photo.
+  Tap a label to edit, move or delete it; tap the eye button to hide labels. The photo itself is
+  never changed — each label is saved as a normal measurement of that room (so it also appears in
+  the room's Measurements tab), together with its position on the photo.
 - Everything is **saved automatically** on the device you are using.
 
 ## Where your data is saved (important)
@@ -105,6 +111,8 @@ src/
   data/store.tsx       ← keeps the data and saves it on the device
   data/images.ts       ← stores photo files on the device (IndexedDB)
   data/measurementKinds.ts ← measurement types (wall, door, window…) and units
+  data/labelLayout.ts  ← places measurement labels on photos so they don't overlap
+  data/photoTags.ts    ← photo categories
   data/sampleData.ts   ← example content
   pages/               ← one file per screen
   pages/room/          ← the room page and its five tabs
