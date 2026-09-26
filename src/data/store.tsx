@@ -3,6 +3,7 @@ import { sampleData } from './sampleData';
 import type { AppData, PhotoTag, Project } from './types';
 import { upgradeMeasurements } from './measurementKinds';
 import { designImageIds, imageIdsInUse, upgradeDesigns } from './designs';
+import { totalsFor, upgradeBudget } from './budget';
 import { applyRows, diffKeys, itemValue, type ItemKey, type RemoteRow } from '../cloud/changes';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
@@ -14,13 +15,14 @@ import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle
 // ─────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'grand-dunman-home:data';
+const PRE_UPGRADE_KEY = 'grand-dunman-home:budget-before-upgrade';
 
 /** The lists the app lets you add to, edit and delete from. */
 type Collections = Omit<AppData, 'version' | 'project' | 'floorPlan'>;
 export type CollectionName = keyof Collections;
 type ItemOf<K extends CollectionName> = Collections[K][number];
 
-const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'tasks'];
+const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'tasks'];
 
 /** Checks that a file or saved value looks like our data, filling any missing lists. */
 export function parseData(raw: unknown): AppData {
@@ -38,6 +40,9 @@ export function parseData(raw: unknown): AppData {
     designs: [],
     budgetCategories: [],
     expenses: [],
+    vendors: [],
+    purchases: [],
+    payments: [],
     tasks: [],
   };
   for (const k of collectionNames) {
@@ -52,6 +57,7 @@ export function parseData(raw: unknown): AppData {
   // Photo categories were renamed; convert ones saved by earlier versions.
   const oldTags: Record<string, PhotoTag> = { Before: 'Existing Condition', Progress: 'Renovation Progress', Inspiration: 'Design Reference' };
   data.photos = data.photos.map((p) => (oldTags[p.tag] ? { ...p, tag: oldTags[p.tag] } : p));
+  data.purchases = data.purchases.map((i) => (Array.isArray(i.photoIds) ? i : { ...i, photoIds: [] }));
   return data;
 }
 
@@ -132,6 +138,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (local.length) listeners.current.forEach((fn) => fn(local));
   }, [data]);
 
+  // Bring older budget data up to date (runs again if old records arrive from another device).
+  // The upgraded records are normal changes, so they are saved and synced like any edit.
+  useEffect(() => {
+    const upgraded = upgradeBudget(data);
+    if (upgraded === data) return;
+    try {
+      if (data.expenses.some((e) => !e.migrated) && !localStorage.getItem(PRE_UPGRADE_KEY)) {
+        const { budgetCategories, expenses, rooms } = data;
+        localStorage.setItem(PRE_UPGRADE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), budgetCategories, expenses, roomBudgets: rooms.map((r) => ({ id: r.id, budget: r.budget })) }));
+      }
+    } catch {
+      // The originals are kept in the data anyway.
+    }
+    setData(upgraded);
+  }, [data]);
+
   const notify = useCallback((message: string) => {
     setToast(message);
     window.clearTimeout(toastTimer.current);
@@ -154,6 +176,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       name === 'photos' ? [id]
       : name === 'designs' ? d0.designs.filter((x) => x.id === id).flatMap(designImageIds)
       : name === 'rooms' ? [...d0.photos.filter((p) => p.roomId === id).map((p) => p.id), ...d0.designs.filter((x) => x.roomId === id).flatMap(designImageIds)]
+      : name === 'purchases' ? d0.purchases.find((x) => x.id === id)?.photoIds ?? []
       : [];
     deleteImages(imageIds, { cloud: true }).catch(() => {});
 
@@ -170,7 +193,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.designs = d.designs.filter((x) => x.roomId !== id);
         next.tasks = d.tasks.map((t) => (t.roomId === id ? { ...t, roomId: undefined } : t));
         next.expenses = d.expenses.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x)); // payments are kept
-
+        // Items and payments are kept too, as "whole home".
+        next.purchases = d.purchases.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x));
+        next.payments = d.payments.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x));
+      }
+      if (name === 'purchases') {
+        // Payments are money records: they stay, just no longer linked to the item.
+        const item = d.purchases.find((x) => x.id === id);
+        next.payments = d.payments.map((p) => (p.itemId === id ? { ...p, itemId: undefined, roomId: p.roomId ?? item?.roomId, categoryId: p.categoryId ?? item?.categoryId, description: p.description || item?.name } : p));
+      }
+      if (name === 'vendors') {
+        next.purchases = d.purchases.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
+        next.payments = d.payments.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
       }
       return next;
     });
@@ -195,6 +229,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const gone = rows.filter((r) => r.deleted);
     const imageIds = [
       ...gone.filter((r) => r.collection === 'photos').map((r) => r.id),
+      ...gone.filter((r) => r.collection === 'purchases').flatMap((r) => before.purchases.find((x) => x.id === r.id)?.photoIds ?? []),
       ...gone.filter((r) => r.collection === 'designs').flatMap((r) => {
         const d = before.designs.find((x) => x.id === r.id);
         return d ? designImageIds(d) : [];
@@ -245,13 +280,8 @@ export function useRoomName() {
 }
 
 export function useBudgetTotals() {
-  const { budgetCategories, expenses } = useStore().data;
-  return useMemo(() => {
-    const spentBy = (categoryId: string) => expenses.filter((e) => e.categoryId === categoryId).reduce((s, e) => s + e.amount, 0);
-    const totalBudget = budgetCategories.reduce((s, c) => s + c.budget, 0);
-    const totalSpent = expenses.reduce((s, e) => s + e.amount, 0);
-    return { spentBy, totalBudget, totalSpent, pct: totalBudget ? Math.round((totalSpent / totalBudget) * 100) : 0 };
-  }, [budgetCategories, expenses]);
+  const { purchases, payments } = useStore().data;
+  return useMemo(() => totalsFor(purchases, payments), [purchases, payments]);
 }
 
 // ── Backup helpers ───────────────────────────────────────────
@@ -289,10 +319,14 @@ export async function readBackup(text: string): Promise<AppData> {
     hasImage: d.hasImage && restored.has(d.id),
     referenceIds: d.referenceIds.filter((r) => restored.has(r)),
   }));
+  data.purchases = data.purchases.map((i) => {
+    const photoIds = i.photoIds.filter((r) => restored.has(r));
+    return { ...i, photoIds, coverId: i.coverId && photoIds.includes(i.coverId) ? i.coverId : undefined };
+  });
   return data;
 }
 
-/** A clean slate: keeps the room list and budget categories, clears everything else. */
+/** A clean slate: keeps the room list and budget categories, clears everything else (vendors included). */
 export function blankData(current: AppData): AppData {
   return {
     ...current,
@@ -302,6 +336,9 @@ export function blankData(current: AppData): AppData {
     photos: [],
     designs: [],
     expenses: [],
+    vendors: [],
+    purchases: [],
+    payments: [],
     tasks: [],
   };
 }

@@ -1,32 +1,30 @@
 import { useState } from 'react';
 import { newId, useStore } from '../data/store';
+import { normName } from '../data/budget';
 import type { BudgetCategory } from '../data/types';
-import { EditorModal, NumberInput, TextInput, numText, toNumber } from '../components/forms';
+import { EditorModal, TextInput } from '../components/forms';
 
 export function CategoryEditor({ category, onClose }: { category?: BudgetCategory; onClose: () => void }) {
   const { data, upsert, remove, notify } = useStore();
   const [name, setName] = useState(category?.name ?? '');
-  const [budget, setBudget] = useState(category?.budget ? numText(category.budget) : '');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState('');
 
   const save = () => {
-    const budgetNum = toNumber(budget) ?? 0;
-    const e: Record<string, string> = {};
-    if (!name.trim()) e.name = 'Please give the category a name.';
-    if (Number.isNaN(budgetNum) || budgetNum < 0) e.budget = 'Enter an amount, e.g. 15000';
-    setErrors(e);
-    if (Object.keys(e).length) return;
-
-    upsert('budgetCategories', { id: category?.id ?? newId(), name: name.trim(), budget: budgetNum });
-    notify(category ? 'Category updated' : 'Category added');
+    if (!name.trim()) return setError('Please give the category a name.');
+    const same = data.budgetCategories.find((c) => c.id !== category?.id && normName(c.name) === normName(name));
+    if (same) return setError(`"${same.name}" already exists.`);
+    // The old per-category budget isn't used any more but is kept as it was.
+    upsert('budgetCategories', { id: category?.id ?? newId(), budget: category?.budget ?? 0, name: name.trim() });
+    notify(category ? 'Category renamed' : 'Category added');
     onClose();
   };
 
   const del = () => {
     if (!category) return;
-    const payments = data.expenses.filter((x) => x.categoryId === category.id).length;
-    if (payments) {
-      window.alert(`"${category.name}" has ${payments} payment${payments > 1 ? 's' : ''}. Move them to another category or delete them first.`);
+    const items = data.purchases.filter((x) => x.categoryId === category.id).length;
+    const payments = data.payments.filter((x) => !x.itemId && x.categoryId === category.id).length;
+    if (items || payments) {
+      window.alert(`"${category.name}" is used by ${[items && `${items} item${items > 1 ? 's' : ''}`, payments && `${payments} payment${payments > 1 ? 's' : ''}`].filter(Boolean).join(' and ')}. Move them to another category first.`);
       return;
     }
     if (!window.confirm(`Delete "${category.name}"?`)) return;
@@ -36,9 +34,8 @@ export function CategoryEditor({ category, onClose }: { category?: BudgetCategor
   };
 
   return (
-    <EditorModal title={category ? 'Edit budget category' : 'Add budget category'} onClose={onClose} onSave={save} onDelete={category ? del : undefined}>
-      <TextInput label="Category name" value={name} onChange={setName} error={errors.name} placeholder="e.g. Aircon" autoFocus={!category} />
-      <NumberInput label="Budget" value={budget} onChange={setBudget} suffix="S$" error={errors.budget} hint="How much you plan to spend. Money spent is added up from your payments." />
+    <EditorModal title={category ? 'Edit category' : 'Add category'} onClose={onClose} onSave={save} onDelete={category ? del : undefined}>
+      <TextInput label="Category name" value={name} onChange={setName} error={error} placeholder="e.g. Aircon" autoFocus={!category} />
     </EditorModal>
   );
 }

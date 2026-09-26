@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 import { useStore } from '../../data/store';
+import { totalsFor } from '../../data/budget';
 import { inUnit, roomArea, roomSize } from '../../data/measurementKinds';
 import type { Room } from '../../data/types';
 import { money } from '../../format';
@@ -16,7 +17,7 @@ export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () =
 
   const { width, length, ceiling } = roomSize(data.measurements, room.id);
   const floor = roomArea(room, data.measurements);
-  const spent = data.expenses.filter((e) => e.roomId === room.id).reduce((s, e) => s + e.amount, 0);
+  const roomMoney = totalsFor(data.purchases.filter((i) => i.roomId === room.id), data.payments);
   const latestPhotos = data.photos.filter((p) => p.roomId === room.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const designs = data.designs.filter((d) => d.roomId === room.id);
   const selected = designs.filter((d) => d.status === 'Selected').length;
@@ -26,7 +27,7 @@ export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () =
     { label: 'Floor area', value: floor ? `${floor} m²` : '—', sub: width?.widthMm && length?.depthMm ? 'From width × length' : 'Not measured yet', tab: 'measurements' as const },
     { label: 'Room size', value: width?.widthMm && length?.depthMm ? `${m(width.widthMm)} × ${m(length.depthMm)}` : '—', sub: 'Width × length', tab: 'measurements' as const },
     { label: 'Ceiling height', value: m(ceiling?.heightMm) ?? '—', sub: ceiling ? 'Measured' : 'Not measured yet', tab: 'measurements' as const },
-    { label: 'Budget', value: money(spent), sub: room.budget ? `spent of ${money(room.budget)}` : 'spent · no budget set', tab: 'budget' as const },
+    { label: 'Budget', value: roomMoney.itemCount ? money(roomMoney.total) : '—', sub: roomMoney.itemCount ? `${money(roomMoney.paid)} paid${roomMoney.tbdCount ? ` · ${roomMoney.tbdCount} TBD` : ''}` : 'No items yet', tab: 'budget' as const },
     { label: 'Designs', value: String(designs.length), sub: designs.length ? `${selected} selected` : 'None yet', tab: 'designs' as const },
   ];
 

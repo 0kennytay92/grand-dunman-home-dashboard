@@ -1,120 +1,72 @@
 import { useState } from 'react';
-import { Pencil, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useStore } from '../../data/store';
-import type { Expense, Room } from '../../data/types';
-import { formatDate, money } from '../../format';
-import { ExpenseEditor } from '../../editors/ExpenseEditor';
-import { EditorModal, NumberInput, numText, toNumber } from '../../components/forms';
+import { paidValue, pctText, totalsFor } from '../../data/budget';
+import type { Payment, Room } from '../../data/types';
+import { money } from '../../format';
+import { ItemEditor } from '../../editors/ItemEditor';
+import { PaymentEditor } from '../../editors/PaymentEditor';
 import { Card, EmptyState, ProgressBar } from '../../components/ui';
+import { ItemList, noFilters, type ItemFilters } from '../budget/ItemList';
+import { PaymentRow } from '../budget/ItemPage';
+import { TotalsNotes } from '../budget/BudgetPage';
 
+/** The room's items and what they cost. */
 export function BudgetTab({ room }: { room: Room }) {
   const { data } = useStore();
-  const [editing, setEditing] = useState<{ kind: 'expense'; item?: Expense } | { kind: 'budget' } | null>(null);
+  const [editing, setEditing] = useState<'item' | { payment: Payment } | null>(null);
+  const [filters, setFilters] = useState<ItemFilters>(noFilters);
 
-  const payments = data.expenses.filter((e) => e.roomId === room.id).sort((a, b) => b.date.localeCompare(a.date));
-  const spent = payments.reduce((s, e) => s + e.amount, 0);
-  const budget = room.budget ?? 0;
-  const remaining = budget - spent;
-  const pct = budget ? Math.round((spent / budget) * 100) : 0;
-  const categoryName = (id: string) => data.budgetCategories.find((c) => c.id === id)?.name ?? 'No category';
-
-  const byCategory = data.budgetCategories
-    .map((c) => ({ name: c.name, total: payments.filter((e) => e.categoryId === c.id).reduce((s, e) => s + e.amount, 0) }))
-    .filter((c) => c.total > 0)
-    .sort((a, b) => b.total - a.total);
+  const items = data.purchases.filter((i) => i.roomId === room.id);
+  const t = totalsFor(items, data.payments);
+  // Payments for this room that aren't linked to an item yet.
+  const loose = data.payments.filter((p) => !p.itemId && p.roomId === room.id).sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <>
       <Card className="budget-summary">
         <div className="card-head">
-          <h2>Room budget</h2>
-          <button className="link" onClick={() => setEditing({ kind: 'budget' })}><Pencil size={14} /> {budget ? 'Change' : 'Set budget'}</button>
+          <h2>Room total</h2>
+          <button className="link" onClick={() => setEditing('item')}><Plus size={15} /> Add item</button>
         </div>
-        <div className="budget-figures">
+        <div className="budget-figures four">
           <div>
-            <p className="stat-label">Planned</p>
-            <p className="budget-big">{budget ? money(budget) : '—'}</p>
+            <p className="stat-label">Total amount</p>
+            <p className="budget-big">{money(t.total)}</p>
           </div>
           <div>
-            <p className="stat-label">Spent</p>
-            <p className="budget-big">{money(spent)}</p>
+            <p className="stat-label">Paid</p>
+            <p className="budget-big">{money(t.paid)}</p>
           </div>
           <div>
-            <p className="stat-label">{remaining < 0 ? 'Over budget' : 'Remaining'}</p>
-            <p className={`budget-big ${remaining < 0 ? 'over' : 'accent'}`}>{budget ? money(Math.abs(remaining)) : '—'}</p>
+            <p className="stat-label">{t.remaining < 0 ? 'Overpaid' : 'Remaining'}</p>
+            <p className={`budget-big ${t.remaining < 0 ? 'over' : 'accent'}`}>{money(Math.abs(t.remaining))}</p>
+          </div>
+          <div>
+            <p className="stat-label">Payment progress</p>
+            <p className="budget-big">{t.total > 0 ? pctText(t.pct) : '—'}</p>
           </div>
         </div>
-        {budget > 0 && <ProgressBar value={pct} tone={pct > 100 ? 'bad' : pct > 85 ? 'warn' : 'accent'} />}
-        <p className="row-sub">
-          {budget ? `${pct}% of this room's budget used` : 'Set a budget to track spending for this room.'}
-        </p>
+        {t.total > 0 && <ProgressBar value={t.pct} tone={t.pct > 100 ? 'bad' : 'accent'} />}
+        <TotalsNotes totals={t} />
+        {!items.length && <p className="row-sub">Add the items for this room (furniture, carpentry, lights…) to see what it costs.</p>}
       </Card>
 
-      <div className="grid-2">
-        <Card title="Payments for this room" action={<button className="link" onClick={() => setEditing({ kind: 'expense' })}><Plus size={15} /> Add payment</button>}>
-          {payments.length === 0 ? (
-            <EmptyState>No payments linked to this room yet.</EmptyState>
-          ) : (
-            <ul className="list">
-              {payments.map((e) => (
-                <li key={e.id}>
-                  <button className="list-row row-button" onClick={() => setEditing({ kind: 'expense', item: e })}>
-                    <div className="grow">
-                      <p className="row-title">{e.description}</p>
-                      <p className="row-sub">{[categoryName(e.categoryId), e.vendor, formatDate(e.date)].filter(Boolean).join(' · ')}</p>
-                    </div>
-                    <span className="row-amount">{money(e.amount)}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+      <ItemList items={items} filters={filters} setFilters={setFilters} hide={['room']} emptyText="No items for this room yet." />
 
-        <Card title="Spending by category">
-          {byCategory.length === 0 ? (
-            <EmptyState>Nothing spent yet.</EmptyState>
-          ) : (
-            <ul className="list">
-              {byCategory.map((c) => (
-                <li key={c.name} className="cat-row">
-                  <div className="cat-head">
-                    <p className="row-title">{c.name}</p>
-                    <p className="row-meta"><strong>{money(c.total)}</strong></p>
-                  </div>
-                  <ProgressBar value={spent ? (c.total / spent) * 100 : 0} />
-                </li>
-              ))}
-            </ul>
-          )}
+      {loose.length > 0 && (
+        <Card title="Payments not linked to an item">
+          <p className="card-text">{money(loose.reduce((s, p) => s + paidValue(p), 0))} recorded for this room before items existed. Tap one to link it to an item.</p>
+          <ul className="list">
+            {loose.map((p) => <li key={p.id}><PaymentRow p={p} showItem onOpen={(x) => setEditing({ payment: x })} /></li>)}
+          </ul>
         </Card>
-      </div>
+      )}
 
-      {editing?.kind === 'expense' && <ExpenseEditor expense={editing.item} roomId={room.id} onClose={() => setEditing(null)} />}
-      {editing?.kind === 'budget' && <RoomBudgetEditor room={room} onClose={() => setEditing(null)} />}
+      {loose.length === 0 && items.length === 0 && <EmptyState>Items you add with this room chosen show here.</EmptyState>}
+
+      {editing === 'item' && <ItemEditor defaults={{ roomId: room.id }} onClose={() => setEditing(null)} onSaved={(id) => (window.location.hash = `/budget/items/${id}`)} />}
+      {editing && typeof editing === 'object' && <PaymentEditor payment={editing.payment} onClose={() => setEditing(null)} />}
     </>
-  );
-}
-
-function RoomBudgetEditor({ room, onClose }: { room: Room; onClose: () => void }) {
-  const { upsert, notify } = useStore();
-  const [value, setValue] = useState(numText(room.budget));
-  const [error, setError] = useState('');
-
-  const save = () => {
-    const n = toNumber(value) ?? 0;
-    if (Number.isNaN(n) || n < 0) {
-      setError('Enter an amount, e.g. 8000');
-      return;
-    }
-    upsert('rooms', { ...room, budget: n || undefined });
-    notify('Room budget saved');
-    onClose();
-  };
-
-  return (
-    <EditorModal title={`${room.name} budget`} onClose={onClose} onSave={save}>
-      <NumberInput label="Planned budget" value={value} onChange={setValue} suffix="S$" error={error} hint="How much you plan to spend on this room. Leave empty for no budget." />
-    </EditorModal>
   );
 }

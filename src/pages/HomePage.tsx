@@ -10,14 +10,14 @@ import { PhotoThumb } from '../components/PhotoThumb';
 import { DesignImage } from '../components/DesignCard';
 import { designHref } from './designs/links';
 import { TaskEditor } from '../editors/TaskEditor';
-import { ExpenseEditor } from '../editors/ExpenseEditor';
+import { PaymentEditor } from '../editors/PaymentEditor';
 import { Badge, Card, EmptyState, ProgressBar, Stat, statusTone } from '../components/ui';
 
 export function HomePage() {
   const { data } = useStore();
-  const { project, rooms, expenses, designs, tasks } = data;
+  const { project, rooms, payments, designs, tasks } = data;
   const roomName = useRoomName();
-  const { totalBudget, totalSpent } = useBudgetTotals();
+  const budget = useBudgetTotals();
   const [adding, setAdding] = useState<'task' | 'payment' | null>(null);
 
   const areaOf = (r: (typeof rooms)[number]) => roomArea(r, data.measurements);
@@ -31,7 +31,9 @@ export function HomePage() {
   const openTasks = tasks.filter((t) => !t.done);
   const overdue = openTasks.filter((t) => daysUntil(t.due) < 0).length;
   const pendingDesigns = designs.filter((d) => d.status === 'Concept' || d.status === 'Shortlisted');
-  const recent = [...expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+  const recent = payments.filter((p) => p.status === 'Paid').sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
+  const itemName = (id?: string) => data.purchases.find((i) => i.id === id)?.name;
+  const vendorName = (id?: string) => data.vendors.find((v) => v.id === id)?.name;
   const moveInDays = daysUntil(project.targetMoveIn);
   const latestPhotos = [...data.photos].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
 
@@ -51,7 +53,7 @@ export function HomePage() {
 
       <div className="stats-grid">
         <Stat icon={<Gauge size={18} />} label="Overall progress" value={`${overall}%`} hint={`${inProgressRooms.length} rooms under works`} />
-        <Stat icon={<Wallet size={18} />} label="Budget used" value={money(totalSpent)} hint={`of ${money(totalBudget)}`} />
+        <Stat icon={<Wallet size={18} />} label="Paid so far" value={money(budget.paid)} hint={`of ${money(budget.total)}${budget.tbdCount ? ` · +${budget.tbdCount} TBD` : ''}`} />
         <Stat icon={<ListChecks size={18} />} label="Tasks to do" value={String(openTasks.length)} hint={overdue ? `${overdue} overdue` : 'None overdue'} />
         <Stat icon={<DoorOpen size={18} />} label="Rooms" value={String(rooms.length)} hint={`${rooms.filter((r) => r.status === 'Completed').length} completed`} />
       </div>
@@ -86,13 +88,13 @@ export function HomePage() {
             <EmptyState>No payments yet.</EmptyState>
           ) : (
             <ul className="list">
-              {recent.map((e) => (
-                <li key={e.id} className="list-row">
+              {recent.map((p) => (
+                <li key={p.id} className="list-row">
                   <div className="grow">
-                    <p className="row-title">{e.description}</p>
-                    <p className="row-sub">{[e.vendor, formatDate(e.date)].filter(Boolean).join(' · ')}</p>
+                    <p className="row-title">{itemName(p.itemId) ?? p.description ?? p.type}</p>
+                    <p className="row-sub">{[vendorName(p.vendorId), formatDate(p.date)].filter(Boolean).join(' · ')}</p>
                   </div>
-                  <span className="row-amount">{money(e.amount)}</span>
+                  <span className="row-amount">{p.type === 'Refund' ? '−' : ''}{money(p.amount)}</span>
                 </li>
               ))}
             </ul>
@@ -149,7 +151,7 @@ export function HomePage() {
       </div>
 
       {adding === 'task' && <TaskEditor onClose={() => setAdding(null)} />}
-      {adding === 'payment' && <ExpenseEditor onClose={() => setAdding(null)} />}
+      {adding === 'payment' && <PaymentEditor onClose={() => setAdding(null)} />}
     </>
   );
 }

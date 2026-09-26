@@ -2,13 +2,13 @@ import type { AppData } from '../data/types';
 
 // ─────────────────────────────────────────────────────────────
 // ITEMS
-// Online, every room, measurement, photo, design, payment and task
+// Online, every room, measurement, photo, design, vendor, item, payment and task
 // is its own row ("items" table), plus two settings rows. That way a
 // change on one device only touches that one thing, and edits made
 // on different devices merge instead of overwriting each other.
 // ─────────────────────────────────────────────────────────────
 
-export const listNames = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'tasks'] as const;
+export const listNames = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'tasks'] as const;
 export type ListName = (typeof listNames)[number];
 const metaIds = ['project', 'floorPlan'] as const;
 

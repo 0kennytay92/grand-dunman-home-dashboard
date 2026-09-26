@@ -73,7 +73,7 @@ export function SettingsPage() {
   };
 
   const startFresh = () => {
-    if (!window.confirm('Start fresh? This keeps your room list and budget categories, but clears all measurements, payments, designs, photos (including your own) and tasks, and sets room progress and budgets to zero.')) return;
+    if (!window.confirm('Start fresh? This keeps your room list and budget categories, but clears all measurements, budget items, vendors, payments, designs, photos (including your own) and tasks, and sets room progress to zero.')) return;
     replaceAll(blankData(data));
     notify('Ready for your own data');
   };

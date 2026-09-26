@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { newId, useStore } from '../data/store';
 import type { Room, RoomStatus } from '../data/types';
 import { roomSize } from '../data/measurementKinds';
-import { EditorModal, FieldRow, NumberInput, SelectInput, TextArea, TextInput, numText, toNumber } from '../components/forms';
+import { EditorModal, NumberInput, SelectInput, TextArea, TextInput, numText, toNumber } from '../components/forms';
 
 const statuses: RoomStatus[] = ['Not started', 'Planning', 'In progress', 'Completed'];
 
@@ -12,7 +12,6 @@ export function RoomEditor({ room, onClose, onDeleted }: { room?: Room; onClose:
   const [includes, setIncludes] = useState(room?.includes ?? '');
   const [area, setArea] = useState(room?.areaSqm ? numText(room.areaSqm) : '');
   const [status, setStatus] = useState<RoomStatus>(room?.status ?? 'Not started');
-  const [budget, setBudget] = useState(room?.budget ? numText(room.budget) : '');
   const [progress, setProgress] = useState(room?.progress ?? 0);
   const [notes, setNotes] = useState(room?.notes ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -30,8 +29,6 @@ export function RoomEditor({ room, onClose, onDeleted }: { room?: Room; onClose:
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Please give the room a name.';
     if (Number.isNaN(areaNum) || areaNum < 0) e.area = 'Enter a number, e.g. 12.5';
-    const budgetNum = toNumber(budget) ?? 0;
-    if (Number.isNaN(budgetNum) || budgetNum < 0) e.budget = 'Enter an amount, e.g. 8000';
     setErrors(e);
     if (Object.keys(e).length) return;
 
@@ -43,7 +40,7 @@ export function RoomEditor({ room, onClose, onDeleted }: { room?: Room; onClose:
       areaSqm: areaNum,
       status,
       progress,
-      budget: budgetNum || undefined,
+      budget: room?.budget, // no longer shown: room totals now come from the room's items
       notes: notes.trim(),
     });
     notify(room ? 'Room updated' : 'Room added');
@@ -65,10 +62,7 @@ export function RoomEditor({ room, onClose, onDeleted }: { room?: Room; onClose:
     <EditorModal title={room ? 'Edit room' : 'Add room'} onClose={onClose} onSave={save} onDelete={room ? del : undefined}>
       <TextInput label="Room name" value={name} onChange={setName} error={errors.name} placeholder="e.g. Study" autoFocus={!room} />
       <TextInput label="Includes (optional)" value={includes} onChange={setIncludes} placeholder="e.g. Master Bath" hint="Attached spaces shown with the room name" />
-      <FieldRow>
-        <NumberInput label="Floor area" value={area} onChange={setArea} suffix="m²" error={errors.area} hint={measuredArea ? `Measured: ${measuredArea} m² (width × length) – this is shown instead` : 'Worked out for you once room width and length are measured'} />
-        <NumberInput label="Room budget" value={budget} onChange={setBudget} suffix="S$" error={errors.budget} />
-      </FieldRow>
+      <NumberInput label="Floor area" value={area} onChange={setArea} suffix="m²" error={errors.area} hint={measuredArea ? `Measured: ${measuredArea} m² (width × length) – this is shown instead` : 'Worked out for you once room width and length are measured'} />
       <SelectInput label="Status" value={status} onChange={(v) => changeStatus(v as RoomStatus)} options={statuses.map((s) => ({ value: s, label: s }))} />
       <div className="field">
         <label htmlFor="room-progress">Progress: <strong>{progress}%</strong></label>

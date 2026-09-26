@@ -24,13 +24,14 @@ export function nextVersion(designs: Design[], roomId: string, title: string) {
   return `v${(numbers.length ? Math.max(...numbers) : 0) + 1}`;
 }
 
-/** Every stored image id in use: photos, design renders and reference images. */
-export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan'>) {
+/** Every stored image id in use: photos, design renders, reference images and item photos. */
+export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan' | 'purchases'>) {
   return [
     ...(data.floorPlan ? [data.floorPlan.imageId] : []),
     ...data.photos.filter((p) => p.hasImage).map((p) => p.id),
     ...data.designs.filter((d) => d.hasImage).map((d) => d.id),
     ...data.designs.flatMap((d) => d.referenceIds),
+    ...data.purchases.flatMap((i) => i.photoIds),
   ];
 }
 

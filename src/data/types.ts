@@ -64,9 +64,10 @@ export interface Design {
 export interface BudgetCategory {
   id: string;
   name: string;
-  budget: number; // "spent" is worked out from the payments
+  budget: number; // no longer used: item amounts replaced category budgets (kept so nothing is lost)
 }
 
+/** A payment from before the budget upgrade. Each one was copied into `payments`; kept unchanged as a record. */
 export interface Expense {
   id: string;
   date: string;
@@ -75,6 +76,98 @@ export interface Expense {
   vendor: string;
   amount: number;
   roomId?: string; // which room this was for (blank = whole home)
+  migrated?: boolean; // true once copied into `payments`
+}
+
+// ── Renovation budget: vendors, items and payments ───────────
+
+export interface Vendor {
+  id: string;
+  name: string;
+  contactPerson?: string;
+  mobile?: string;
+  whatsapp?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  uen?: string;
+  notes?: string;
+}
+
+/** Whether an item's total amount is a guess or agreed with the vendor. */
+export type AmountStatus = 'Estimated' | 'Confirmed';
+
+export type DeliveryStatus =
+  | 'Not Ordered' | 'Ordered' | 'Awaiting Delivery Date' | 'Delivery Scheduled'
+  | 'Partially Delivered' | 'Delivered' | 'Delivery Issue' | 'Returned / Exchanged';
+
+export type InstallationStatus =
+  | 'Not Required' | 'Awaiting Installation' | 'Installation Scheduled' | 'Installation In Progress'
+  | 'Installed' | 'Installation Issue' | 'Completed';
+
+/** One change to an item's total amount. `null` means "TBD". */
+export interface AmountChange {
+  date: string; // YYYY-MM-DD
+  from: number | null;
+  to: number | null;
+  status: AmountStatus;
+  note?: string;
+}
+
+/**
+ * Something being bought or built. The single source of truth for its money:
+ * one total amount; "paid" is always added up from its payments.
+ */
+export interface PurchaseItem {
+  id: string;
+  name: string;
+  vendorId?: string;
+  roomId?: string; // blank = whole home
+  categoryId?: string;
+  description?: string;
+  brand?: string;
+  model?: string;
+  sku?: string;
+  quantity?: number;
+  dimensions?: string;
+  material?: string;
+  colour?: string;
+  finish?: string;
+  url?: string;
+  notes?: string;
+  totalAmount: number | null; // null = TBD (unknown), never treated as 0
+  amountStatus: AmountStatus;
+  amountHistory?: AmountChange[];
+  orderDate?: string;
+  expectedDelivery?: string;
+  actualDelivery?: string;
+  expectedInstallation?: string;
+  actualInstallation?: string;
+  deliveryStatus: DeliveryStatus;
+  installationStatus: InstallationStatus;
+  photoIds: string[]; // product photos, stored like other pictures
+  coverId?: string; // which photo shows on cards
+  createdAt?: string;
+}
+
+export type PaymentType = 'Deposit' | 'Progress Payment' | 'Final Payment' | 'Refund' | 'Other';
+
+/** Money paid (or due to be paid) for an item. Refunds are entered as positive amounts and subtracted. */
+export interface Payment {
+  id: string;
+  itemId?: string; // blank = not linked to an item yet
+  vendorId?: string;
+  amount: number;
+  date: string; // date paid, or due date when scheduled
+  status: 'Paid' | 'Scheduled';
+  type: PaymentType;
+  method?: string;
+  reference?: string;
+  description?: string;
+  notes?: string;
+  categoryId?: string; // for payments not linked to an item
+  roomId?: string; // for payments not linked to an item
+  fromExpenseId?: string; // set when copied from an earlier payment record
 }
 
 export interface Task {
@@ -89,6 +182,7 @@ export interface Project {
   name: string;
   address: string;
   targetMoveIn: string;
+  budgetVersion?: number; // 2 = budget upgrade done (suggested categories added)
 }
 
 /** A floor plan drawing stored on the device, with where the plan's origin is and its scale. */
@@ -111,6 +205,9 @@ export interface AppData {
   designs: Design[];
   budgetCategories: BudgetCategory[];
   expenses: Expense[];
+  vendors: Vendor[];
+  purchases: PurchaseItem[];
+  payments: Payment[];
   tasks: Task[];
   floorPlan?: FloorPlanImage;
 }

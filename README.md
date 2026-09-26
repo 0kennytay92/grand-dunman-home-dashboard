@@ -3,11 +3,11 @@
 A mobile-friendly dashboard for managing the renovation of our Grand Dunman home.
 It starts with sample (made-up) data that you can edit, delete or clear.
 
-Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget · Settings & Backup
+Sections: Home · Rooms · Floor Plan · Measurements · Photos · Interior Designs · Renovation Budget · Settings & Backup
 
 ## What you can do
 
-- **Add, edit and delete** rooms, measurements, payments, budget categories, designs and tasks.
+- **Add, edit and delete** rooms, measurements, budget items, vendors, payments, categories, designs and tasks.
   Look for the **+ Add** buttons; tap any item to edit or delete it.
 - **Open any room** to see its own page with five tabs:
   - **Overview**: floor area, size, ceiling height, budget, notes, tasks and latest photos
@@ -16,7 +16,7 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
     windows (with height from the floor) and anything else. Floor area is worked out
     from width × length. Switch between mm, cm and m.
   - **Designs**: design ideas for the room
-  - **Budget**: a planned budget for the room, and the payments linked to it
+  - **Budget**: the room's items, with their total, paid and remaining amounts
 - **Interior Designs**, organised by room. Each design has a render/image, room, design name,
   version, date, description, design prompt (with a Copy button), reference images and a status
   (Concept, Shortlisted, Selected, Rejected).
@@ -36,6 +36,20 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
 - **Design files** (Interior Designs → Import designs → a `.json` design file) add ready-made
   designs with their pictures, and optionally your floor plan drawing. They are *added* to what you
   have (nothing is replaced), and importing the same file again updates rather than duplicates.
+- **Renovation Budget**: every item you're buying or building (sofa, carpentry, curtains…).
+  - Each item has **one total amount**, marked *Estimated* or *Confirmed*, or **TBD** when it isn't
+    known yet. TBD items are never counted as $0: totals leave them out and say how many are waiting.
+  - **Paid** is always added up from the item's payments (deposits, progress and final payments;
+    refunds are taken off; *scheduled* payments don't count until paid). **Remaining** = total − paid.
+  - Changing a total keeps a short history of what it was and why it changed.
+  - Items can have product photos (camera or photo library), a vendor, room and category, product
+    details and delivery / installation dates and statuses.
+  - **Vendors** have their own page with contact buttons (call, WhatsApp, email) and a money summary.
+  - A table on large screens and cards on phones, with search, filters and sorting; totals by room,
+    category and vendor; what's coming up; and what needs attention (e.g. overdue payments).
+  - **Import items** loads a list of items from a `.json` file; items already in the app are skipped.
+  - Payments recorded before this upgrade were kept and show under "Payments not linked to an item"
+    until you link each one to its item.
 - **Tick off tasks** on the Home page or on a room's page.
 - **Add real photos**: in a room's Photos tab (or the Photos page) tap **Add Photo**. On iPhone you can
   *Take Photo* or pick from your *Photo Library*. Each photo has a room, date, description and

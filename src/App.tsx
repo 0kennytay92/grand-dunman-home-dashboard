@@ -8,7 +8,9 @@ import { PhotosPage } from './pages/PhotosPage';
 import { DesignsPage } from './pages/designs/DesignsPage';
 import { DesignDetailPage } from './pages/designs/DesignDetailPage';
 import { ComparePage } from './pages/designs/ComparePage';
-import { BudgetPage } from './pages/BudgetPage';
+import { BudgetPage } from './pages/budget/BudgetPage';
+import { ItemPage } from './pages/budget/ItemPage';
+import { VendorPage } from './pages/budget/VendorPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { FloorPlanPage } from './pages/FloorPlanPage';
 import { StoreProvider } from './data/store';
@@ -18,6 +20,11 @@ import { SyncPage } from './pages/SyncPage';
 function Page({ path }: { path: string }) {
   const roomMatch = path.match(/^\/rooms\/([\w-]+)(?:\/(\w+))?$/);
   if (roomMatch) return <RoomPage roomId={roomMatch[1]} tab={roomMatch[2]} />;
+
+  const itemMatch = path.match(/^\/budget\/items\/([\w-]+)(?:\/(\w+))?$/);
+  if (itemMatch) return <ItemPage itemId={itemMatch[1]} tab={itemMatch[2]} />;
+  const vendorMatch = path.match(/^\/budget\/vendors\/([\w-]+)$/);
+  if (vendorMatch) return <VendorPage vendorId={vendorMatch[1]} />;
 
   const compareMatch = path.match(/^\/designs\/compare\/([\w-]+)$/);
   if (compareMatch) return <ComparePage roomId={compareMatch[1]} />;

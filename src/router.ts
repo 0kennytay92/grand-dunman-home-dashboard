@@ -15,8 +15,8 @@ export function useRoute() {
     let previous = currentPath();
     const onChange = () => {
       const next = currentPath();
-      // Switching tabs inside the same room keeps your place on the page.
-      const sameRoom = (p: string) => p.match(/^\/rooms\/[\w-]+/)?.[0];
+      // Switching tabs inside the same room (or budget item) keeps your place on the page.
+      const sameRoom = (p: string) => p.match(/^\/(rooms|budget\/items)\/[\w-]+/)?.[0];
       if (!sameRoom(next) || sameRoom(next) !== sameRoom(previous)) window.scrollTo(0, 0);
       previous = next;
       setPath(next);

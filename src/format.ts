@@ -4,7 +4,10 @@ const sgd = new Intl.NumberFormat('en-SG', {
   maximumFractionDigits: 0,
 });
 
-export const money = (n: number) => sgd.format(n);
+const sgdCents = new Intl.NumberFormat('en-SG', { style: 'currency', currency: 'SGD', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** "S$1,500", or "S$1,499.50" when there are cents. */
+export const money = (n: number) => (Math.round(n * 100) % 100 === 0 ? sgd : sgdCents).format(n);
 
 export const mm = (n: number) => n.toLocaleString('en-SG');
 

@@ -5,7 +5,7 @@
 // this file is only used for "Reset to sample data".
 // ─────────────────────────────────────────────────────────────
 
-import type { AppData, BudgetCategory, Design, Expense, Measurement, Photo, Project, Room, Task } from './types';
+import type { AppData, BudgetCategory, Design, Measurement, Payment, Photo, Project, PurchaseItem, Room, Task, Vendor } from './types';
 
 // ── Project ──────────────────────────────────────────────────
 
@@ -179,15 +179,46 @@ const budgetCategories: BudgetCategory[] = [
   { id: 'furniture', name: 'Furniture & Decor', budget: 25000 },
 ];
 
-const expenses: Expense[] = [
-  { id: 'e1', date: '2026-09-22', description: 'Master wardrobe – 2nd payment', categoryId: 'carpentry', vendor: 'Oak & Stone Carpentry', amount: 7500, roomId: 'master' },
-  { id: 'e2', date: '2026-09-18', description: 'Wiring & new power points', categoryId: 'electrical', vendor: 'BrightSpark Electrical', amount: 3200 },
-  { id: 'e3', date: '2026-09-15', description: 'Hob & hood deposit', categoryId: 'kitchen', vendor: 'KitchenPro SG', amount: 3500, roomId: 'wet-kitchen' },
-  { id: 'e4', date: '2026-09-10', description: 'Vinyl flooring deposit', categoryId: 'flooring', vendor: 'FloorCraft', amount: 4800 },
-  { id: 'e5', date: '2026-09-05', description: 'Carpentry deposit (30%)', categoryId: 'carpentry', vendor: 'Oak & Stone Carpentry', amount: 15000 },
-  { id: 'e6', date: '2026-09-02', description: 'Lighting fixtures', categoryId: 'electrical', vendor: 'Lumière Lighting', amount: 3000, roomId: 'living' },
-  { id: 'e7', date: '2026-08-30', description: 'Master Bath fittings', categoryId: 'bath', vendor: 'BathHaus', amount: 1800, roomId: 'master' },
-  { id: 'e8', date: '2026-08-25', description: 'Dining chairs (4)', categoryId: 'furniture', vendor: 'Nordic Living', amount: 2400, roomId: 'dining' },
+// ── Vendors, items and payments (made-up examples) ──────────
+
+const vendors: Vendor[] = [
+  { id: 'vendor-oak-and-stone-carpentry', name: 'Oak & Stone Carpentry', contactPerson: 'Mr Tan', mobile: '+65 8000 0001' },
+  { id: 'vendor-brightspark-electrical', name: 'BrightSpark Electrical' },
+  { id: 'vendor-kitchenpro-sg', name: 'KitchenPro SG' },
+  { id: 'vendor-floorcraft', name: 'FloorCraft' },
+  { id: 'vendor-lumiere-lighting', name: 'Lumière Lighting' },
+  { id: 'vendor-bathhaus', name: 'BathHaus' },
+  { id: 'vendor-nordic-living', name: 'Nordic Living' },
+];
+
+const item = (x: Partial<PurchaseItem> & Pick<PurchaseItem, 'id' | 'name' | 'totalAmount'>): PurchaseItem => ({
+  amountStatus: 'Confirmed', deliveryStatus: 'Not Ordered', installationStatus: 'Not Required', photoIds: [], ...x,
+});
+
+const purchases: PurchaseItem[] = [
+  item({ id: 'i-carpentry', name: 'Carpentry package', vendorId: 'vendor-oak-and-stone-carpentry', categoryId: 'carpentry', totalAmount: 50000, description: 'Wardrobes, kitchen cabinets and TV consoles', orderDate: '2026-09-05', deliveryStatus: 'Ordered', installationStatus: 'Awaiting Installation' }),
+  item({ id: 'i-wiring', name: 'Wiring & power points', vendorId: 'vendor-brightspark-electrical', categoryId: 'electrical', totalAmount: 6400, installationStatus: 'Installation In Progress' }),
+  item({ id: 'i-hob-hood', name: 'Hob & hood', vendorId: 'vendor-kitchenpro-sg', roomId: 'wet-kitchen', categoryId: 'kitchen', totalAmount: 7000, deliveryStatus: 'Delivery Scheduled', expectedDelivery: '2026-10-12', installationStatus: 'Awaiting Installation' }),
+  item({ id: 'i-vinyl', name: 'Vinyl flooring', vendorId: 'vendor-floorcraft', categoryId: 'flooring', totalAmount: 12000, amountStatus: 'Estimated', deliveryStatus: 'Ordered', installationStatus: 'Awaiting Installation' }),
+  item({ id: 'i-living-lights', name: 'Living room lighting', vendorId: 'vendor-lumiere-lighting', roomId: 'living', categoryId: 'electrical', totalAmount: 3000, deliveryStatus: 'Delivered', actualDelivery: '2026-09-10', installationStatus: 'Installation Scheduled', expectedInstallation: '2026-10-03' }),
+  item({ id: 'i-master-bath', name: 'Master Bath fittings', vendorId: 'vendor-bathhaus', roomId: 'master', categoryId: 'bath', totalAmount: 1800, deliveryStatus: 'Delivered', installationStatus: 'Completed' }),
+  item({ id: 'i-dining-chairs', name: 'Dining chairs', vendorId: 'vendor-nordic-living', roomId: 'dining', categoryId: 'furniture', totalAmount: 2400, quantity: 4, deliveryStatus: 'Delivered' }),
+  item({ id: 'i-aircon', name: 'Aircon system', categoryId: 'cat-air-conditioning', totalAmount: null, amountStatus: 'Estimated', installationStatus: 'Awaiting Installation' }),
+  item({ id: 'i-balcony-set', name: 'Balcony outdoor set', roomId: 'balcony', categoryId: 'furniture', totalAmount: null, amountStatus: 'Estimated' }),
+];
+
+const pay = (x: Omit<Payment, 'status' | 'type'> & Partial<Pick<Payment, 'status' | 'type'>>): Payment => ({ status: 'Paid', type: 'Other', ...x });
+
+const payments: Payment[] = [
+  pay({ id: 'p1', itemId: 'i-carpentry', vendorId: 'vendor-oak-and-stone-carpentry', amount: 15000, date: '2026-09-05', type: 'Deposit', method: 'Bank transfer', description: 'Carpentry deposit (30%)' }),
+  pay({ id: 'p2', itemId: 'i-carpentry', vendorId: 'vendor-oak-and-stone-carpentry', amount: 7500, date: '2026-09-22', type: 'Progress Payment', method: 'PayNow', description: 'Master wardrobe – 2nd payment' }),
+  pay({ id: 'p3', itemId: 'i-carpentry', vendorId: 'vendor-oak-and-stone-carpentry', amount: 15000, date: '2026-10-15', status: 'Scheduled', type: 'Progress Payment' }),
+  pay({ id: 'p4', itemId: 'i-wiring', vendorId: 'vendor-brightspark-electrical', amount: 3200, date: '2026-09-18', type: 'Deposit', method: 'PayNow' }),
+  pay({ id: 'p5', itemId: 'i-hob-hood', vendorId: 'vendor-kitchenpro-sg', amount: 3500, date: '2026-09-15', type: 'Deposit', method: 'Credit card' }),
+  pay({ id: 'p6', itemId: 'i-vinyl', vendorId: 'vendor-floorcraft', amount: 4800, date: '2026-09-10', type: 'Deposit', method: 'Bank transfer' }),
+  pay({ id: 'p7', itemId: 'i-living-lights', vendorId: 'vendor-lumiere-lighting', amount: 3000, date: '2026-09-02', type: 'Final Payment', method: 'Credit card' }),
+  pay({ id: 'p8', itemId: 'i-master-bath', vendorId: 'vendor-bathhaus', amount: 1800, date: '2026-08-30', type: 'Final Payment', method: 'PayNow' }),
+  pay({ id: 'p9', itemId: 'i-dining-chairs', vendorId: 'vendor-nordic-living', amount: 2400, date: '2026-08-25', type: 'Final Payment', method: 'Credit card' }),
 ];
 
 // ── Upcoming tasks (shown on Home) ───────────────────────────
@@ -207,6 +238,9 @@ export const sampleData: AppData = {
   photos,
   designs,
   budgetCategories,
-  expenses,
+  expenses: [],
+  vendors,
+  purchases,
+  payments,
   tasks,
 };
