@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { sampleData } from './sampleData';
 import type { AppData, PhotoTag, Project } from './types';
 import { upgradeMeasurements } from './measurementKinds';
+import { designImageIds, imageIdsInUse, upgradeDesigns } from './designs';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
 // ─────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ export function parseData(raw: unknown): AppData {
     (data[k] as unknown[]) = list ?? [];
   }
   data.measurements = upgradeMeasurements(data.measurements);
+  data.designs = upgradeDesigns(data.designs);
   // Photo categories were renamed; convert ones saved by earlier versions.
   const oldTags: Record<string, PhotoTag> = { Before: 'Existing Condition', Progress: 'Renovation Progress', Inspiration: 'Design Reference' };
   data.photos = data.photos.map((p) => (oldTags[p.tag] ? { ...p, tag: oldTags[p.tag] } : p));
@@ -88,7 +90,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Tidy up photo files left behind (e.g. if the app closed mid-delete).
   useEffect(() => {
-    pruneImages(dataRef.current.photos.map((p) => p.id)).catch(() => {});
+    pruneImages(imageIdsInUse(dataRef.current)).catch(() => {});
   }, []);
 
   // Save after every change.
@@ -118,9 +120,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const remove = useCallback((name: CollectionName, id: string) => {
     // Photo files are stored separately, so delete those too.
-    const photoIds =
-      name === 'photos' ? [id] : name === 'rooms' ? dataRef.current.photos.filter((p) => p.roomId === id).map((p) => p.id) : [];
-    deleteImages(photoIds).catch(() => {});
+    const d0 = dataRef.current;
+    const imageIds =
+      name === 'photos' ? [id]
+      : name === 'designs' ? d0.designs.filter((x) => x.id === id).flatMap(designImageIds)
+      : name === 'rooms' ? [...d0.photos.filter((p) => p.roomId === id).map((p) => p.id), ...d0.designs.filter((x) => x.roomId === id).flatMap(designImageIds)]
+      : [];
+    deleteImages(imageIds).catch(() => {});
 
     setData((d) => {
       const next = { ...d, [name]: (d[name] as { id: string }[]).filter((x) => x.id !== id) };
@@ -144,7 +150,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const updateProject = useCallback((project: Project) => setData((d) => ({ ...d, project })), []);
   const replaceAll = useCallback((next: AppData) => {
     setData(next);
-    pruneImages(next.photos.map((p) => p.id)).catch(() => {});
+    pruneImages(imageIdsInUse(next)).catch(() => {});
   }, []);
 
   const value = useMemo(
@@ -193,7 +199,7 @@ interface BackupFile extends AppData {
 
 /** Saves everything, photos included, as one .json file. */
 export async function downloadBackup(data: AppData) {
-  const images = await exportImages(data.photos.filter((p) => p.hasImage).map((p) => p.id));
+  const images = await exportImages(imageIdsInUse(data));
   const backup: BackupFile = { ...data, images };
   const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -214,6 +220,11 @@ export async function readBackup(text: string): Promise<AppData> {
   // Photos whose file isn't in the backup fall back to a placeholder.
   const restored = new Set(Object.keys(raw.images ?? {}));
   data.photos = data.photos.map((p) => (p.hasImage && !restored.has(p.id) ? { ...p, hasImage: false } : p));
+  data.designs = data.designs.map((d) => ({
+    ...d,
+    hasImage: d.hasImage && restored.has(d.id),
+    referenceIds: d.referenceIds.filter((r) => restored.has(r)),
+  }));
   return data;
 }
 

@@ -111,12 +111,60 @@ const photos: Photo[] = [
 // ── Interior designs ─────────────────────────────────────────
 
 const designs: Design[] = [
-  { id: 'd1', roomId: 'living', title: 'Warm Minimal Living', style: 'Japandi', designer: 'Studio Oak & Stone', status: 'Approved', palette: ['#e9e2d6', '#c4a57f', '#7a6a58', '#2f2b27'], notes: 'Oak veneer TV console, linen curtains, cove lighting.' },
-  { id: 'd2', roomId: 'dining', title: 'Dining Nook', style: 'Japandi', designer: 'Studio Oak & Stone', status: 'Under review', palette: ['#f1ece4', '#b89b76', '#5c5046'], notes: 'Round travertine table with fluted bench.' },
-  { id: 'd3', roomId: 'dry-kitchen', title: 'Island Kitchen', style: 'Modern Luxe', designer: 'Studio Oak & Stone', status: 'Draft', palette: ['#f5f5f3', '#9aa3a6', '#3d4447', '#b08d57'], notes: 'Calacatta-look quartz, brushed brass handles.' },
-  { id: 'd4', roomId: 'master', title: 'Hotel-style Master Suite', style: 'Contemporary', designer: 'Studio Oak & Stone', status: 'Approved', palette: ['#ece7e1', '#a39585', '#4a4037', '#1f1c19'], notes: 'Upholstered headboard wall, glass-front wardrobe.' },
-  { id: 'd5', roomId: 'lift-lobby', title: 'Welcome Lobby', style: 'Modern Luxe', designer: 'Studio Oak & Stone', status: 'Under review', palette: ['#e8e1d5', '#a0784c', '#2e2a25'], notes: 'Fluted panels with concealed shoe storage.' },
-  { id: 'd6', roomId: 'junior-master', title: 'Calm Junior Master', style: 'Scandinavian', designer: 'Studio Oak & Stone', status: 'Draft', palette: ['#f3f1ec', '#c9d1cc', '#7d8c84'], notes: 'Sage accent wall, light ash wood.' },
+  {
+    id: 'd1', roomId: 'living', title: 'Warm Minimal Living', version: 'v1', date: '2026-08-30', status: 'Selected',
+    notes: 'Oak veneer TV console, linen curtains, cove lighting.',
+    prompt: 'Photorealistic render of a Singapore condo living room, Japandi style, light oak TV feature wall with fluted panels, warm cove lighting, linen sheer curtains, beige boucle sofa, travertine coffee table, soft afternoon light, 35mm lens, eye level',
+    referenceIds: [], palette: ['#e9e2d6', '#c4a57f', '#7a6a58', '#2f2b27'],
+  },
+  {
+    id: 'd1b', roomId: 'living', title: 'Warm Minimal Living', version: 'v2', date: '2026-09-06', status: 'Shortlisted',
+    notes: 'Same layout with darker walnut console and brass accents.',
+    prompt: 'Same living room as v1, walnut TV console instead of oak, brushed brass accents, warmer 2700K lighting, dusk',
+    referenceIds: [], palette: ['#e6ddd0', '#8a6547', '#3b2c22', '#b08d57'],
+  },
+  {
+    id: 'd1c', roomId: 'living', title: 'Scandi Light Living', version: 'v1', date: '2026-09-10', status: 'Rejected',
+    notes: 'Too cold for the space – kept for reference.',
+    prompt: 'Scandinavian living room, white walls, pale ash floor, grey fabric sofa, black accents, overcast daylight',
+    referenceIds: [], palette: ['#f4f4f2', '#d9d6d0', '#8f9396', '#2b2d2f'],
+  },
+  {
+    id: 'd2', roomId: 'dining', title: 'Dining Nook', version: 'v1', date: '2026-09-02', status: 'Shortlisted',
+    notes: 'Round travertine table with fluted bench.',
+    prompt: 'Dining area in a condo, round travertine dining table for 4, built-in fluted oak bench along the wall, linen pendant light, Japandi, warm evening light',
+    referenceIds: [], palette: ['#f1ece4', '#b89b76', '#5c5046'],
+  },
+  {
+    id: 'd2b', roomId: 'dining', title: 'Dining Nook', version: 'v2', date: '2026-09-12', status: 'Concept',
+    notes: 'Rectangular table for 6, sideboard on the feature wall.',
+    prompt: 'Same dining area, rectangular oak table for 6, low sideboard on the feature wall, two linear pendants',
+    referenceIds: [], palette: ['#eee7dc', '#a7875f', '#4f443a'],
+  },
+  {
+    id: 'd3', roomId: 'dry-kitchen', title: 'Island Kitchen', version: 'v1', date: '2026-08-28', status: 'Concept',
+    notes: 'Calacatta-look quartz, brushed brass handles.',
+    prompt: 'Open dry kitchen with 2.2 m island, calacatta-look quartz top, matte greige cabinets, brushed brass handles, three small pendants',
+    referenceIds: [], palette: ['#f5f5f3', '#9aa3a6', '#3d4447', '#b08d57'],
+  },
+  {
+    id: 'd4', roomId: 'master', title: 'Hotel-style Master Suite', version: 'v1', date: '2026-08-25', status: 'Selected',
+    notes: 'Upholstered headboard wall, glass-front wardrobe.',
+    prompt: 'Luxury hotel-style master bedroom, full-height upholstered headboard wall, glass-front walk-in wardrobe with lighting, warm grey and taupe, soft cove lighting',
+    referenceIds: [], palette: ['#ece7e1', '#a39585', '#4a4037', '#1f1c19'],
+  },
+  {
+    id: 'd5', roomId: 'lift-lobby', title: 'Welcome Lobby', version: 'v1', date: '2026-09-01', status: 'Shortlisted',
+    notes: 'Fluted panels with concealed shoe storage.',
+    prompt: 'Private lift lobby, full-height fluted oak panels hiding shoe cabinets, bench seat, bronze mirror, warm downlights',
+    referenceIds: [], palette: ['#e8e1d5', '#a0784c', '#2e2a25'],
+  },
+  {
+    id: 'd6', roomId: 'junior-master', title: 'Calm Junior Master', version: 'v1', date: '2026-09-08', status: 'Concept',
+    notes: 'Sage accent wall, light ash wood.',
+    prompt: 'Calm bedroom, sage green accent wall behind the bed, light ash wood wardrobe, white linen bedding, morning light',
+    referenceIds: [], palette: ['#f3f1ec', '#c9d1cc', '#7d8c84'],
+  },
 ];
 
 // ── Budget (Singapore dollars) ───────────────────────────────

@@ -19,7 +19,7 @@ export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () =
   const spent = data.expenses.filter((e) => e.roomId === room.id).reduce((s, e) => s + e.amount, 0);
   const latestPhotos = data.photos.filter((p) => p.roomId === room.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const designs = data.designs.filter((d) => d.roomId === room.id);
-  const approved = designs.filter((d) => d.status === 'Approved').length;
+  const selected = designs.filter((d) => d.status === 'Selected').length;
   const m = (v?: number) => (v === undefined ? undefined : `${inUnit(v, 'm')} m`);
 
   const facts = [
@@ -27,7 +27,7 @@ export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () =
     { label: 'Room size', value: width?.widthMm && length?.depthMm ? `${m(width.widthMm)} × ${m(length.depthMm)}` : '—', sub: 'Width × length', tab: 'measurements' as const },
     { label: 'Ceiling height', value: m(ceiling?.heightMm) ?? '—', sub: ceiling ? 'Measured' : 'Not measured yet', tab: 'measurements' as const },
     { label: 'Budget', value: money(spent), sub: room.budget ? `spent of ${money(room.budget)}` : 'spent · no budget set', tab: 'budget' as const },
-    { label: 'Designs', value: String(designs.length), sub: designs.length ? `${approved} approved` : 'None yet', tab: 'designs' as const },
+    { label: 'Designs', value: String(designs.length), sub: designs.length ? `${selected} selected` : 'None yet', tab: 'designs' as const },
   ];
 
   return (

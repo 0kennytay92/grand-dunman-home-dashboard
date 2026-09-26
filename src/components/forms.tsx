@@ -8,6 +8,7 @@ export function EditorModal({
   onSave,
   onDelete,
   deleteLabel = 'Delete',
+  saveLabel = 'Save',
   children,
 }: {
   title: string;
@@ -15,6 +16,7 @@ export function EditorModal({
   onSave: () => void;
   onDelete?: () => void;
   deleteLabel?: string;
+  saveLabel?: string;
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -52,7 +54,7 @@ export function EditorModal({
           )}
           <span className="grow" />
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-          <button type="submit" className="btn btn-primary">Save</button>
+          <button type="submit" className="btn btn-primary">{saveLabel}</button>
         </footer>
       </form>
     </div>

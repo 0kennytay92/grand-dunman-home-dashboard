@@ -7,6 +7,8 @@ import { href } from '../router';
 import { navItems } from '../components/Layout';
 import { TaskList } from '../components/TaskList';
 import { PhotoThumb } from '../components/PhotoThumb';
+import { DesignImage } from '../components/DesignCard';
+import { designHref } from './designs/links';
 import { TaskEditor } from '../editors/TaskEditor';
 import { ExpenseEditor } from '../editors/ExpenseEditor';
 import { Badge, Card, EmptyState, ProgressBar, Stat, statusTone } from '../components/ui';
@@ -28,7 +30,7 @@ export function HomePage() {
   const inProgressRooms = rooms.filter((r) => r.status === 'In progress');
   const openTasks = tasks.filter((t) => !t.done);
   const overdue = openTasks.filter((t) => daysUntil(t.due) < 0).length;
-  const pendingDesigns = designs.filter((d) => d.status !== 'Approved');
+  const pendingDesigns = designs.filter((d) => d.status === 'Concept' || d.status === 'Shortlisted');
   const recent = [...expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4);
   const moveInDays = daysUntil(project.targetMoveIn);
   const latestPhotos = [...data.photos].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
@@ -98,21 +100,21 @@ export function HomePage() {
           <a className="link card-foot-link" href={href('/budget')}>See full budget <ChevronRight size={15} /></a>
         </Card>
 
-        <Card title="Designs awaiting approval" action={<a className="link" href={href('/designs')}>All designs <ChevronRight size={15} /></a>}>
+        <Card title="Designs to decide on" action={<a className="link" href={href('/designs')}>All designs <ChevronRight size={15} /></a>}>
           {pendingDesigns.length === 0 ? (
-            <EmptyState>All designs approved.</EmptyState>
+            <EmptyState>No designs waiting for a decision.</EmptyState>
           ) : (
             <ul className="list">
               {pendingDesigns.slice(0, 4).map((d) => (
-                <li key={d.id} className="list-row">
-                  <div className="swatches small">
-                    {d.palette.map((c, i) => <span key={i} style={{ background: c }} />)}
-                  </div>
-                  <div className="grow">
-                    <p className="row-title">{d.title}</p>
-                    <p className="row-sub">{roomName(d.roomId)}</p>
-                  </div>
-                  <Badge tone={statusTone[d.status]}>{d.status}</Badge>
+                <li key={d.id}>
+                  <a className="list-row" href={designHref(d.id)}>
+                    <div className="mini-render"><DesignImage design={d} /></div>
+                    <div className="grow">
+                      <p className="row-title">{d.title} <span className="version-inline">{d.version}</span></p>
+                      <p className="row-sub">{roomName(d.roomId)}</p>
+                    </div>
+                    <Badge tone={statusTone[d.status]}>{d.status}</Badge>
+                  </a>
                 </li>
               ))}
             </ul>

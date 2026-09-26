@@ -17,6 +17,17 @@ Sections: Home · Rooms · Measurements · Photos · Interior Designs · Budget 
     from width × length. Switch between mm, cm and m.
   - **Designs**: design ideas for the room
   - **Budget**: a planned budget for the room, and the payments linked to it
+- **Interior Designs**, organised by room. Each design has a render/image, room, design name,
+  version, date, description, design prompt (with a Copy button), reference images and a status
+  (Concept, Shortlisted, Selected, Rejected).
+  - **New version** copies a design (name, prompt, references) as v2, v3… so you can iterate.
+  - **Compare** shows a room's renders side by side, or two at a time with a slider to wipe
+    between them. You can change each design's status right there.
+  - **Import from PowerPoint**: download your renders deck as .pptx (Google Slides:
+    File → Download → Microsoft PowerPoint) and choose it. Each slide with a picture becomes a
+    design; the biggest picture is the render, others become reference images, the slide title
+    becomes the name and the room is guessed from it. A "Prompt:" line on the slide, or the
+    speaker notes, becomes the design prompt. Nothing is uploaded — it all happens on your device.
 - **Tick off tasks** on the Home page or on a room's page.
 - **Add real photos**: in a room's Photos tab (or the Photos page) tap **Add Photo**. On iPhone you can
   *Take Photo* or pick from your *Photo Library*. Each photo has a room, date, description and
@@ -101,6 +112,7 @@ If it finishes with `✓ built`, there are no errors.
 | React + TypeScript | Builds the screens; TypeScript catches mistakes early |
 | Vite | Runs the app locally and reloads it when files change |
 | lucide-react | The icon set |
+| fflate | Opens PowerPoint files (they are zip files) to import renders |
 | Plain CSS (`src/styles.css`) | All colours/spacing; automatic dark mode |
 
 Folder layout:
@@ -113,9 +125,12 @@ src/
   data/measurementKinds.ts ← measurement types (wall, door, window…) and units
   data/labelLayout.ts  ← places measurement labels on photos so they don't overlap
   data/photoTags.ts    ← photo categories
+  data/designs.ts      ← design statuses and versions
+  data/pptx.ts         ← reads renders out of PowerPoint files
   data/sampleData.ts   ← example content
   pages/               ← one file per screen
   pages/room/          ← the room page and its five tabs
+  pages/designs/       ← designs list, design page and compare
   editors/             ← the add/edit forms
   components/          ← shared pieces (navigation, cards, form fields)
   styles.css           ← the look and feel

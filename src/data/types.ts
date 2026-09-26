@@ -43,17 +43,22 @@ export interface Photo {
   hasImage?: boolean; // false for sample photos, which show a placeholder
 }
 
-export type DesignStatus = 'Draft' | 'Under review' | 'Approved';
+export type DesignStatus = 'Concept' | 'Shortlisted' | 'Selected' | 'Rejected';
 
 export interface Design {
   id: string;
   roomId: string;
-  title: string;
-  style: string;
-  designer: string;
+  title: string; // design name
+  version: string; // e.g. "v2"
+  date: string; // YYYY-MM-DD
   status: DesignStatus;
-  palette: string[];
-  notes: string;
+  notes: string; // shown as "Description"
+  prompt: string; // the design prompt used to generate the render
+  hasImage?: boolean; // the render, stored on the device under this design's id
+  referenceIds: string[]; // reference images, each stored on the device under its own id
+  palette?: string[]; // colour swatches, shown when there is no render yet
+  style?: string;
+  designer?: string;
 }
 
 export interface BudgetCategory {
