@@ -1,8 +1,9 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import { getLocalImage, type Variant } from '../data/images';
+import { imageIdsInUse } from '../data/designs';
 import type { AppData } from '../data/types';
 import { IMAGE_BUCKET, imagePath } from './client';
-import { itemValue, splitKey, type ItemKey, type RemoteRow } from './changes';
+import { allKeys, itemKey, itemValue, listNames, splitKey, type ItemKey, type RemoteRow } from './changes';
 
 // ─────────────────────────────────────────────────────────────
 // SYNC ENGINE
@@ -24,6 +25,18 @@ interface SyncState {
   uploads: string[]; // pictures and files to upload
   deletes: string[]; // pictures and files to delete online
   seen: Record<ItemKey, string>; // item → online timestamp already applied
+  lists?: string[]; // the kinds of records this app version understood when it last downloaded
+}
+
+/** What the app understood before the Renovation Budget upgrade. Saved states without `lists` date from then. */
+const FIRST_LISTS = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'tasks'];
+
+export interface RepairResult {
+  checked: number; // records online
+  downloaded: number; // were missing or different on this device
+  removed: number; // deleted elsewhere, still here
+  uploaded: number; // only on this device
+  picturesUploaded: number; // pictures/files only on this device
 }
 
 export interface SyncSnapshot {
@@ -39,6 +52,15 @@ interface LocalSide {
 }
 
 const PAGE = 500;
+
+/** The same JSON for the same content, whatever order the fields are in (the database reorders them). */
+function stable(v: unknown): string {
+  if (Array.isArray(v)) return `[${v.map(stable).join(',')}]`;
+  if (v && typeof v === 'object') {
+    return `{${Object.keys(v).filter((k) => (v as Record<string, unknown>)[k] !== undefined).sort().map((k) => `${JSON.stringify(k)}:${stable((v as Record<string, unknown>)[k])}`).join(',')}}`;
+  }
+  return JSON.stringify(v) ?? 'null';
+}
 const OVERLAP_MS = 5000; // re-check a few seconds back, in case a slow save landed out of order
 
 export class SyncEngine {
@@ -187,6 +209,7 @@ export class SyncEngine {
     this.set({ status: 'syncing' });
     try {
       await this.push();
+      await this.catchUp();
       await this.pull();
       this.set({ status: 'synced', lastSynced: new Date(), error: null });
     } catch (e) {
@@ -196,6 +219,7 @@ export class SyncEngine {
   private async pullOnly() {
     if (!this.running) return;
     try {
+      await this.catchUp();
       await this.pull();
       this.set({ status: this.pendingCount() ? this.snapshot.status : 'synced', lastSynced: new Date(), error: null });
     } catch (e) {
@@ -268,6 +292,106 @@ export class SyncEngine {
   }
 
   // ── Download ───────────────────────────────────────────────
+
+  /** Every online row (optionally only some kinds), in pages. */
+  private async fetchAll(collections?: string[], columns = 'collection,id,data,deleted,updated_at') {
+    const out: RemoteRow[] = [];
+    for (let from = 0; ; from += PAGE) {
+      let q = this.client.from('items').select(columns).eq('home_id', this.homeId);
+      if (collections) q = q.in('collection', collections);
+      const { data, error } = await q.order('collection').order('id').range(from, from + PAGE - 1);
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as RemoteRow[];
+      out.push(...rows);
+      if (rows.length < PAGE) break;
+    }
+    return out;
+  }
+
+  /**
+   * After an app update: download the kinds of records the previous version didn't understand.
+   * (An older version skips them, but its "last downloaded" marker moves on – so without this,
+   * things added on another device in the meantime would never arrive.)
+   */
+  private async catchUp() {
+    const known = this.state.lists ?? FIRST_LISTS;
+    const missing = listNames.filter((n) => !known.includes(n));
+    if (missing.length && this.state.cursor) {
+      const rows = await this.fetchAll(missing);
+      const fresh = rows.filter((r) => !(itemKey(r.collection, r.id) in this.state.outbox));
+      if (fresh.length) this.local.applyRemote(fresh);
+      for (const r of rows) this.state.seen[itemKey(r.collection, r.id)] = r.updated_at;
+    }
+    if (missing.length || !this.state.lists) {
+      this.state.lists = [...listNames];
+      this.save();
+    }
+  }
+
+  /**
+   * "Check & repair": compares everything on this device with the online copy and fixes differences.
+   * Online wins for records that differ (unless changed here and still waiting to upload);
+   * records that exist only here are uploaded; pictures only on this device are uploaded.
+   */
+  async repair(): Promise<RepairResult> {
+    const job = this.busy.then(async (): Promise<RepairResult> => {
+      this.set({ status: 'syncing' });
+      await this.push();
+      const rows = await this.fetchAll();
+      const data = this.local.getData();
+      const online = new Set<string>();
+      const apply: RemoteRow[] = [];
+      let downloaded = 0;
+      let removed = 0;
+      for (const r of rows) {
+        const key = itemKey(r.collection, r.id);
+        online.add(key);
+        if (key in this.state.outbox) continue;
+        if (r.collection !== 'meta' && !(listNames as readonly string[]).includes(r.collection)) continue;
+        const local = itemValue(data, key);
+        if (r.deleted) {
+          if (local !== undefined) { apply.push(r); removed++; }
+        } else if (local === undefined || stable(local) !== stable(r.data)) {
+          apply.push(r);
+          downloaded++;
+        }
+        this.state.seen[key] = r.updated_at;
+      }
+      if (apply.length) this.local.applyRemote(apply);
+      const newest = rows.reduce((m, r) => (r.updated_at > m ? r.updated_at : m), this.state.cursor ?? '');
+      if (newest) this.state.cursor = newest;
+      this.state.lists = [...listNames];
+
+      // Records only on this device: upload them.
+      const after = this.local.getData();
+      const onlyHere = allKeys(after).filter((k) => !online.has(k));
+      for (const k of onlyHere) this.state.outbox[k] = (this.state.outbox[k] ?? 0) + 1;
+
+      // Pictures and files only on this device: upload them.
+      const folders = new Set<string>();
+      for (let offset = 0; ; offset += 1000) {
+        const { data: list, error } = await this.client.storage.from(IMAGE_BUCKET).list(this.homeId, { limit: 1000, offset });
+        if (error) throw error;
+        (list ?? []).forEach((f) => folders.add(f.name));
+        if (!list || list.length < 1000) break;
+      }
+      let picturesUploaded = 0;
+      for (const id of new Set(imageIdsInUse(after))) {
+        if (folders.has(id) || this.state.uploads.includes(id)) continue;
+        const here = (await getLocalImage(id, 'thumb')) ?? (await getLocalImage(id, 'original'));
+        if (here) {
+          this.state.uploads.push(id);
+          picturesUploaded++;
+        }
+      }
+      this.save();
+      await this.push();
+      this.set({ status: 'synced', lastSynced: new Date(), error: null });
+      return { checked: rows.length, downloaded, removed, uploaded: onlyHere.length, picturesUploaded };
+    });
+    this.busy = job.then(() => {}, (e) => this.fail(e)); // keep the queue going either way
+    return job;
+  }
 
   private async pull() {
     // First page: everything newer than what we've seen (with a small overlap).

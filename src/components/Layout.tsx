@@ -7,6 +7,7 @@ import { SyncLine } from '../pages/SyncPage';
 import type { LucideIcon } from 'lucide-react';
 import { href } from '../router';
 import { useStore } from '../data/store';
+import { useNewVersion } from '../useNewVersion';
 
 interface NavItem {
   path: string;
@@ -38,6 +39,7 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
   const [moreOpen, setMoreOpen] = useState(false);
   const secondary = navItems.filter((n) => !mobilePrimary.includes(n.path));
   const moreActive = secondary.some((n) => isActive(n.path, path));
+  const newVersion = useNewVersion();
 
   return (
     <div className="shell">
@@ -74,6 +76,12 @@ export function Layout({ path, children }: { path: string; children: ReactNode }
       </header>
 
       <main className="content">
+        {newVersion && (
+          <p className="banner-update" role="status">
+            A newer version of the app is available.
+            <button className="btn btn-primary small" onClick={() => window.location.reload()}>Update now</button>
+          </p>
+        )}
         {saveError && (
           <p className="banner-error">
             <TriangleAlert size={18} /> Changes can't be saved on this device (storage is full or blocked, e.g. private browsing). Export a backup from Settings.

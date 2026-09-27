@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { CloudOff, Download, LogOut, Merge, RefreshCw, Trash2, UploadCloud, UserPlus } from 'lucide-react';
+import { CloudOff, Download, LogOut, Merge, RefreshCw, ShieldCheck, Trash2, UploadCloud, UserPlus } from 'lucide-react';
 import { friendlyError, useCloud, type Member } from '../cloud/CloudProvider';
 import { useStore } from '../data/store';
 import { Badge, Card, EmptyState, PageHeader } from '../components/ui';
@@ -228,6 +228,7 @@ function Connected() {
         <p className="row-sub sync-note">
           Changes you make here upload within seconds; changes from your other devices appear automatically.
         </p>
+        <RepairSync />
       </Card>
 
       <Card title="Account">
@@ -322,4 +323,56 @@ function timeAgo(d: Date) {
   if (m < 60) return `${m} min ago`;
   const h = Math.round(m / 60);
   return `${h} h ago`;
+}
+
+/** "Check & repair": makes sure this device and the online copy match, and says what it did. */
+function RepairSync() {
+  const cloud = useCloud();
+  const { data } = useStore();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [failed, setFailed] = useState('');
+
+  const run = async () => {
+    setBusy(true);
+    setResult(null);
+    setFailed('');
+    try {
+      const r = await cloud.repairSync();
+      const fixes = [
+        r.downloaded && `${r.downloaded} record${r.downloaded === 1 ? '' : 's'} updated from the online copy`,
+        r.removed && `${r.removed} removed (deleted on another device)`,
+        r.uploaded && `${r.uploaded} uploaded (they were only on this device)`,
+        r.picturesUploaded && `${r.picturesUploaded} picture${r.picturesUploaded === 1 ? '' : 's'} / file${r.picturesUploaded === 1 ? '' : 's'} uploaded`,
+      ].filter(Boolean);
+      setResult(fixes.length ? `Fixed: ${fixes.join(', ')}.` : `All ${r.checked} records match the online copy – nothing to fix.`);
+    } catch (e) {
+      setFailed(friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const counts: [string, number][] = [
+    ['Rooms', data.rooms.length], ['Measurements', data.measurements.length], ['Photos', data.photos.length], ['Designs', data.designs.length],
+    ['Budget items', data.purchases.length], ['Vendors', data.vendors.length], ['Payments', data.payments.length], ['Documents', data.documents.length],
+    ['Issues', data.issues.length], ['Messages', data.messages.length], ['Tasks', data.tasks.length],
+  ];
+
+  return (
+    <div className="repair">
+      <h3 className="mini-head">Check that everything matches</h3>
+      <p className="row-sub">If your phone and computer don't look the same, tap this on <strong>each</strong> device. It compares this device with the online copy and fixes any differences.</p>
+      <button className="btn btn-ghost" onClick={run} disabled={busy || !cloud.sync}><ShieldCheck size={16} /> {busy ? 'Checking…' : 'Check & repair'}</button>
+      {result && <p className="banner-info repair-result">{result}</p>}
+      {failed && <p className="field-msg">{failed}</p>}
+      <details className="device-counts">
+        <summary>What's on this device</summary>
+        <p className="row-sub">Compare these numbers on your phone and computer – after syncing they should be the same.</p>
+        <dl className="count-grid">
+          {counts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
+        </dl>
+      </details>
+    </div>
+  );
 }

@@ -183,16 +183,27 @@ export function useImageUrl(photoId: string, variant: Variant, enabled = true) {
       return;
     }
     let alive = true;
-    getImage(photoId, variant)
-      .then((blob) => {
-        if (!alive || !blob) return;
-        const u = URL.createObjectURL(blob);
-        urlCache.set(k, u);
-        setUrl(u);
-      })
-      .catch(() => {});
+    let timer: number | undefined;
+    // A picture added on another device may still be uploading: try again a few times.
+    const waits = [4000, 15000, 45000];
+    const attempt = (n: number) => {
+      getImage(photoId, variant)
+        .then((blob) => {
+          if (!alive) return;
+          if (!blob) {
+            if (n < waits.length) timer = window.setTimeout(() => attempt(n + 1), waits[n]);
+            return;
+          }
+          const u = urlCache.get(k) ?? URL.createObjectURL(blob);
+          urlCache.set(k, u);
+          setUrl(u);
+        })
+        .catch(() => {});
+    };
+    attempt(0);
     return () => {
       alive = false;
+      window.clearTimeout(timer);
     };
   }, [k, photoId, variant, enabled]);
 

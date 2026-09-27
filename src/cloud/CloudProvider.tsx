@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { arrivalParams, arrivedFromEmailLink, supabase } from './client';
-import { SyncEngine, type SyncSnapshot } from './sync';
+import { SyncEngine, type RepairResult, type SyncSnapshot } from './sync';
 import { allKeys } from './changes';
 import { connectImageSync } from '../data/images';
 import { imageIdsInUse } from '../data/designs';
@@ -46,6 +46,8 @@ interface Cloud {
   cancelInvite: (email: string) => Promise<void>;
   removeMember: (userId: string) => Promise<void>;
   syncNow: () => void;
+  /** Compares this device with the online copy and fixes any differences. */
+  repairSync: () => Promise<RepairResult>;
   clearLinkError: () => void;
 }
 
@@ -300,6 +302,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   );
 
   const syncNow = useCallback(() => void engineRef.current?.syncNow(), []);
+  const repairSync = useCallback(async () => {
+    if (!engineRef.current) throw new Error('Not syncing yet.');
+    return engineRef.current.repair();
+  }, []);
   const clearLinkError = useCallback(() => setLinkError(null), []);
 
   const value = useMemo<Cloud>(
@@ -326,9 +332,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       cancelInvite,
       removeMember,
       syncNow,
+      repairSync,
       clearLinkError,
     }),
-    [ready, session, homes, homeId, sync, recovering, linkError, signIn, signUp, sendPasswordReset, setNewPassword, signOut, createHome, connectHome, refreshHomes, renameHome, listMembers, invite, cancelInvite, removeMember, syncNow, clearLinkError],
+    [ready, session, homes, homeId, sync, recovering, linkError, signIn, signUp, sendPasswordReset, setNewPassword, signOut, createHome, connectHome, refreshHomes, renameHome, listMembers, invite, cancelInvite, removeMember, syncNow, repairSync, clearLinkError],
   );
 
   return <CloudContext.Provider value={value}>{children}</CloudContext.Provider>;
