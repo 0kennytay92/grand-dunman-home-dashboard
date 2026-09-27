@@ -105,6 +105,28 @@ export type InstallationStatus =
   | 'Not Required' | 'Awaiting Installation' | 'Installation Scheduled' | 'Installation In Progress'
   | 'Installed' | 'Installation Issue' | 'Completed';
 
+/** How something looked when it was checked on delivery or after installation. */
+export type InspectionCondition =
+  | 'Good' | 'Minor Issue' | 'Damaged' | 'Wrong Item' | 'Incomplete Delivery' // delivery
+  | 'Not Installed Correctly' | 'Incomplete Installation'; // installation
+
+export interface Inspection {
+  date: string; // YYYY-MM-DD
+  condition: InspectionCondition;
+  accepted: boolean; // false = an issue was reported
+  notes?: string;
+  photoIds: string[];
+  issueId?: string;
+}
+
+export interface Warranty {
+  start?: string; // YYYY-MM-DD
+  months?: number;
+  end?: string; // worked out from start + months, or typed in
+  provider?: string;
+  notes?: string;
+}
+
 /** One change to an item's total amount. `null` means "TBD". */
 export interface AmountChange {
   date: string; // YYYY-MM-DD
@@ -149,6 +171,9 @@ export interface PurchaseItem {
   videoIds?: string[]; // short videos, stored as the original file
   coverId?: string; // which photo shows on cards
   paperworkNotNeeded?: boolean; // no invoice / receipt expected (e.g. paid in a shop), so don't flag it
+  deliveryInspection?: Inspection;
+  installationInspection?: Inspection;
+  warranty?: Warranty;
   createdAt?: string;
 }
 
@@ -193,10 +218,44 @@ export interface DocumentFile {
   vendorId?: string;
   itemIds: string[]; // one invoice can cover several items
   paymentIds: string[]; // e.g. the receipt or proof for a payment
+  issueIds?: string[]; // e.g. photos or letters about a defect
+  relatesTo?: 'Delivery' | 'Installation'; // e.g. a delivery order or installation report
   number?: string; // invoice / quotation number
   amount?: number; // the total printed on it, for reference only
   notes?: string;
   addedAt: string;
+}
+
+export type IssueStatus = 'Open' | 'Reported to Vendor' | 'Fix Scheduled' | 'Resolved';
+
+/** A problem with an item: damaged on delivery, installed wrongly, a defect found later… */
+export interface Issue {
+  id: string;
+  itemId: string;
+  kind: 'Delivery' | 'Installation' | 'Other';
+  title: string;
+  description?: string;
+  condition?: InspectionCondition;
+  status: IssueStatus;
+  reportedDate: string; // YYYY-MM-DD
+  fixDate?: string; // when the vendor will fix it
+  resolvedDate?: string;
+  photoIds: string[];
+  notes?: string;
+}
+
+export type MessageChannel = 'WhatsApp' | 'Email' | 'Phone Call' | 'Meeting' | 'SMS' | 'Other';
+
+/** A record of talking to a vendor (text and/or screenshots). Not connected to WhatsApp or email. */
+export interface VendorMessage {
+  id: string;
+  vendorId: string;
+  itemIds: string[];
+  date: string; // YYYY-MM-DD
+  channel: MessageChannel;
+  direction: 'From Vendor' | 'To Vendor' | 'Note';
+  text: string;
+  photoIds: string[]; // screenshots
 }
 
 export interface Task {
@@ -238,6 +297,8 @@ export interface AppData {
   purchases: PurchaseItem[];
   payments: Payment[];
   documents: DocumentFile[];
+  issues: Issue[];
+  messages: VendorMessage[];
   tasks: Task[];
   floorPlan?: FloorPlanImage;
 }

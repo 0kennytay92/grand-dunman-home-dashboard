@@ -1,4 +1,4 @@
-import type { AppData, Design, DesignStatus } from './types';
+import type { AppData, Design, DesignStatus, PurchaseItem } from './types';
 
 export const designStatuses: DesignStatus[] = ['Concept', 'Shortlisted', 'Selected', 'Rejected'];
 
@@ -25,14 +25,21 @@ export function nextVersion(designs: Design[], roomId: string, title: string) {
 }
 
 /** Every stored image id in use: photos, design renders, reference images, item photos and videos, and documents. */
-export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan' | 'purchases' | 'documents'>) {
+/** Every picture or file belonging to an item: photos, videos and inspection photos. */
+export const itemImageIds = (i: PurchaseItem) => [
+  ...i.photoIds, ...(i.videoIds ?? []), ...(i.deliveryInspection?.photoIds ?? []), ...(i.installationInspection?.photoIds ?? []),
+];
+
+export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan' | 'purchases' | 'documents' | 'issues' | 'messages'>) {
   return [
     ...(data.floorPlan ? [data.floorPlan.imageId] : []),
     ...data.photos.filter((p) => p.hasImage).map((p) => p.id),
     ...data.designs.filter((d) => d.hasImage).map((d) => d.id),
     ...data.designs.flatMap((d) => d.referenceIds),
-    ...data.purchases.flatMap((i) => [...i.photoIds, ...(i.videoIds ?? [])]),
+    ...data.purchases.flatMap(itemImageIds),
     ...data.documents.map((d) => d.id),
+    ...data.issues.flatMap((x) => x.photoIds),
+    ...data.messages.flatMap((x) => x.photoIds),
   ];
 }
 

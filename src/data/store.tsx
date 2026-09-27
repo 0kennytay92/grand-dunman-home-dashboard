@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { sampleData } from './sampleData';
 import type { AppData, PhotoTag, Project } from './types';
 import { upgradeMeasurements } from './measurementKinds';
-import { designImageIds, imageIdsInUse, upgradeDesigns } from './designs';
+import { designImageIds, imageIdsInUse, itemImageIds, upgradeDesigns } from './designs';
 import { totalsFor, upgradeBudget } from './budget';
 import { applyRows, diffKeys, itemValue, type ItemKey, type RemoteRow } from '../cloud/changes';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
@@ -22,7 +22,7 @@ type Collections = Omit<AppData, 'version' | 'project' | 'floorPlan'>;
 export type CollectionName = keyof Collections;
 type ItemOf<K extends CollectionName> = Collections[K][number];
 
-const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'tasks'];
+const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'tasks'];
 
 /** Checks that a file or saved value looks like our data, filling any missing lists. */
 export function parseData(raw: unknown): AppData {
@@ -44,6 +44,8 @@ export function parseData(raw: unknown): AppData {
     purchases: [],
     payments: [],
     documents: [],
+    issues: [],
+    messages: [],
     tasks: [],
   };
   for (const k of collectionNames) {
@@ -178,8 +180,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       name === 'photos' ? [id]
       : name === 'designs' ? d0.designs.filter((x) => x.id === id).flatMap(designImageIds)
       : name === 'rooms' ? [...d0.photos.filter((p) => p.roomId === id).map((p) => p.id), ...d0.designs.filter((x) => x.roomId === id).flatMap(designImageIds)]
-      : name === 'purchases' ? [...(d0.purchases.find((x) => x.id === id)?.photoIds ?? []), ...(d0.purchases.find((x) => x.id === id)?.videoIds ?? [])]
+      : name === 'purchases' ? [...d0.purchases.filter((x) => x.id === id).flatMap(itemImageIds), ...d0.issues.filter((x) => x.itemId === id).flatMap((x) => x.photoIds)]
       : name === 'documents' ? [id]
+      : name === 'issues' ? d0.issues.find((x) => x.id === id)?.photoIds ?? []
+      : name === 'messages' ? d0.messages.find((x) => x.id === id)?.photoIds ?? []
+      : name === 'vendors' ? d0.messages.filter((x) => x.vendorId === id).flatMap((x) => x.photoIds)
       : [];
     deleteImages(imageIds, { cloud: true }).catch(() => {});
 
@@ -206,6 +211,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.payments = d.payments.map((p) => (p.itemId === id ? { ...p, itemId: undefined, roomId: p.roomId ?? item?.roomId, categoryId: p.categoryId ?? item?.categoryId, description: p.description || item?.name } : p));
         // Documents are kept too (an invoice may cover other items).
         next.documents = d.documents.map((x) => (x.itemIds.includes(id) ? { ...x, itemIds: x.itemIds.filter((i) => i !== id) } : x));
+        // The item's issues go with it; messages stay with the vendor.
+        next.issues = d.issues.filter((x) => x.itemId !== id);
+        next.messages = d.messages.map((x) => (x.itemIds.includes(id) ? { ...x, itemIds: x.itemIds.filter((i) => i !== id) } : x));
+      }
+      if (name === 'issues') {
+        next.documents = d.documents.map((x) => (x.issueIds?.includes(id) ? { ...x, issueIds: x.issueIds.filter((i) => i !== id) } : x));
       }
       if (name === 'payments') {
         next.documents = d.documents.map((x) => (x.paymentIds.includes(id) ? { ...x, paymentIds: x.paymentIds.filter((i) => i !== id) } : x));
@@ -214,6 +225,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         next.purchases = d.purchases.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
         next.payments = d.payments.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
         next.documents = d.documents.map((x) => (x.vendorId === id ? { ...x, vendorId: undefined } : x));
+        next.messages = d.messages.filter((x) => x.vendorId !== id); // messages belong to the vendor
       }
       return next;
     });
@@ -238,8 +250,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const gone = rows.filter((r) => r.deleted);
     const imageIds = [
       ...gone.filter((r) => r.collection === 'photos').map((r) => r.id),
-      ...gone.filter((r) => r.collection === 'purchases').flatMap((r) => { const i = before.purchases.find((x) => x.id === r.id); return [...(i?.photoIds ?? []), ...(i?.videoIds ?? [])]; }),
+      ...gone.filter((r) => r.collection === 'purchases').flatMap((r) => before.purchases.filter((x) => x.id === r.id).flatMap(itemImageIds)),
       ...gone.filter((r) => r.collection === 'documents').map((r) => r.id),
+      ...gone.filter((r) => r.collection === 'issues').flatMap((r) => before.issues.find((x) => x.id === r.id)?.photoIds ?? []),
+      ...gone.filter((r) => r.collection === 'messages').flatMap((r) => before.messages.find((x) => x.id === r.id)?.photoIds ?? []),
       ...gone.filter((r) => r.collection === 'designs').flatMap((r) => {
         const d = before.designs.find((x) => x.id === r.id);
         return d ? designImageIds(d) : [];
@@ -334,6 +348,14 @@ export async function readBackup(text: string): Promise<AppData> {
     const videoIds = i.videoIds?.filter((r) => restored.has(r));
     return { ...i, photoIds, videoIds, coverId: i.coverId && photoIds.includes(i.coverId) ? i.coverId : undefined };
   });
+  const keep = (ids: string[]) => ids.filter((r) => restored.has(r));
+  data.purchases = data.purchases.map((i) => ({
+    ...i,
+    ...(i.deliveryInspection ? { deliveryInspection: { ...i.deliveryInspection, photoIds: keep(i.deliveryInspection.photoIds) } } : {}),
+    ...(i.installationInspection ? { installationInspection: { ...i.installationInspection, photoIds: keep(i.installationInspection.photoIds) } } : {}),
+  }));
+  data.issues = data.issues.map((x) => ({ ...x, photoIds: keep(x.photoIds) }));
+  data.messages = data.messages.map((x) => ({ ...x, photoIds: keep(x.photoIds) }));
   // Documents whose file isn't in the backup are kept (their details are still useful); they show as "file missing".
   return data;
 }
@@ -352,6 +374,8 @@ export function blankData(current: AppData): AppData {
     purchases: [],
     payments: [],
     documents: [],
+    issues: [],
+    messages: [],
     tasks: [],
   };
 }

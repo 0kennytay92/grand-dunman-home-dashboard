@@ -9,6 +9,7 @@ export function EditorModal({
   onDelete,
   deleteLabel = 'Delete',
   saveLabel = 'Save',
+  footer,
   children,
 }: {
   title: string;
@@ -17,6 +18,8 @@ export function EditorModal({
   onDelete?: () => void;
   deleteLabel?: string;
   saveLabel?: string;
+  /** Replaces the usual Delete / Cancel / Save buttons. */
+  footer?: ReactNode;
   children: ReactNode;
 }) {
   useEffect(() => {
@@ -46,7 +49,7 @@ export function EditorModal({
           </button>
         </header>
         <div className="modal-body">{children}</div>
-        <footer className="modal-foot">
+        {footer ? <footer className="modal-foot">{footer}</footer> : <footer className="modal-foot">
           {onDelete && (
             <button type="button" className="btn btn-danger" onClick={onDelete}>
               <Trash2 size={16} /> {deleteLabel}
@@ -55,7 +58,7 @@ export function EditorModal({
           <span className="grow" />
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
           <button type="submit" className="btn btn-primary">{saveLabel}</button>
-        </footer>
+        </footer>}
       </form>
     </div>
   );

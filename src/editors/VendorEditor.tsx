@@ -31,6 +31,8 @@ export function VendorEditor({ vendor, onClose, onDeleted }: { vendor?: Vendor; 
     if (!vendor) return;
     const items = data.purchases.filter((i) => i.vendorId === vendor.id).length;
     const payments = data.payments.filter((p) => p.vendorId === vendor.id).length;
+    const messages = data.messages.filter((m) => m.vendorId === vendor.id).length;
+    if (!items && !payments && messages && !window.confirm(`"${vendor.name}" has ${messages} saved message${messages > 1 ? 's' : ''}. Delete the vendor and the messages?`)) return;
     if (items || payments) {
       window.alert(`"${vendor.name}" has ${[items && `${items} item${items > 1 ? 's' : ''}`, payments && `${payments} payment${payments > 1 ? 's' : ''}`].filter(Boolean).join(' and ')}. Change their vendor or delete them first.`);
       return;

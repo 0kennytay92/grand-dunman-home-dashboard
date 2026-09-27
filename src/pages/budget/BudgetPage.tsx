@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { AlertTriangle, Camera, ChevronRight, CreditCard, FileUp, Link2, ListPlus, Plus, Truck, Wrench } from 'lucide-react';
 import { todayIso, useBudgetTotals, useRoomName, useStore } from '../../data/store';
 import { needsAttention, paidValue, pctText, totalsFor, unlinkedPayments, upcoming, type Totals } from '../../data/budget';
-import type { BudgetCategory, Payment, PurchaseItem } from '../../data/types';
+import type { BudgetCategory, Issue, Payment, PurchaseItem } from '../../data/types';
 import { daysUntil, formatDate, money } from '../../format';
 import { CategoryEditor } from '../../editors/CategoryEditor';
 import { ItemEditor } from '../../editors/ItemEditor';
@@ -10,6 +10,8 @@ import { ItemImport } from '../../editors/ItemImport';
 import { ItemPhotoAdder } from '../../editors/ItemPhotoAdder';
 import { DocumentAdder } from '../../editors/DocumentForm';
 import { DocumentsCard } from './Documents';
+import { IssueForm, QuickDelivered } from '../../editors/Tracking';
+import { IssueList } from './ItemTracking';
 import { PaymentEditor } from '../../editors/PaymentEditor';
 import { VendorEditor } from '../../editors/VendorEditor';
 import { Card, Chips, EmptyState, PageHeader, ProgressBar } from '../../components/ui';
@@ -21,7 +23,9 @@ type Editing =
   | { kind: 'item' }
   | { kind: 'payment'; payment?: Payment }
   | { kind: 'vendor' }
-  | { kind: 'category'; category?: BudgetCategory };
+  | { kind: 'category'; category?: BudgetCategory }
+  | { kind: 'delivered' }
+  | { kind: 'issue'; issue?: Issue };
 
 const groupings = ['Room', 'Category', 'Vendor'] as const;
 type Grouping = (typeof groupings)[number];
@@ -63,6 +67,8 @@ export function BudgetPage() {
         <ItemPhotoAdder>
           {(open, busy) => <button className="qa" onClick={open} disabled={busy}><Camera size={20} /> {busy ? 'Saving…' : 'Take product photo'}</button>}
         </ItemPhotoAdder>
+        <button className="qa" onClick={() => setEditing({ kind: 'delivered' })}><Truck size={20} /> Mark delivered</button>
+        <button className="qa" onClick={() => setEditing({ kind: 'issue' })}><AlertTriangle size={20} /> Report issue</button>
       </div>
 
       <Summary totals={totals} />
@@ -71,6 +77,8 @@ export function BudgetPage() {
         <UpcomingCard onOpenPayment={(p) => setEditing({ kind: 'payment', payment: p })} />
         <AttentionCard unlinkedCount={unlinked.length} tbdCount={totals.tbdCount} onTbd={() => showItems({ amount: 'TBD' })} onOpenPayment={(p) => setEditing({ kind: 'payment', payment: p })} />
       </div>
+
+      <OpenIssues onOpen={(issue) => setEditing({ kind: 'issue', issue })} />
 
       {unlinked.length > 0 && (
         <Card title="Payments not linked to an item" className="unlinked-card">
@@ -105,6 +113,8 @@ export function BudgetPage() {
       {editing?.kind === 'payment' && <PaymentEditor payment={editing.payment} onClose={close} />}
       {editing?.kind === 'vendor' && <VendorEditor onClose={close} />}
       {editing?.kind === 'category' && <CategoryEditor category={editing.category} onClose={close} />}
+      {editing?.kind === 'delivered' && <QuickDelivered onClose={close} />}
+      {editing?.kind === 'issue' && <IssueForm issue={editing.issue} onClose={close} />}
     </div>
   );
 }
@@ -150,8 +160,8 @@ function Summary({ totals }: { totals: Totals }) {
 function UpcomingCard({ onOpenPayment }: { onOpenPayment: (p: Payment) => void }) {
   const { data } = useStore();
   const list = upcoming(data, todayIso()).slice(0, 6);
-  const icon = { payment: <CreditCard size={16} />, delivery: <Truck size={16} />, installation: <Wrench size={16} /> };
-  const label = { payment: 'Payment due', delivery: 'Delivery', installation: 'Installation' };
+  const icon = { payment: <CreditCard size={16} />, delivery: <Truck size={16} />, installation: <Wrench size={16} />, fix: <AlertTriangle size={16} /> };
+  const label = { payment: 'Payment due', delivery: 'Delivery', installation: 'Installation', fix: 'Issue fix' };
 
   return (
     <Card title="Coming up">
@@ -177,7 +187,7 @@ function UpcomingCard({ onOpenPayment }: { onOpenPayment: (p: Payment) => void }
                 {u.payment ? (
                   <button className="list-row row-button" onClick={() => onOpenPayment(u.payment!)}>{body}</button>
                 ) : (
-                  <a className="list-row" href={itemHref(u.item!.id)}>{body}</a>
+                  <a className="list-row" href={itemHref(u.item!.id, u.kind === 'fix' ? 'issues' : u.kind === 'payment' ? 'payments' : u.kind)}>{body}</a>
                 )}
               </li>
             );
@@ -216,7 +226,7 @@ function AttentionCard({ unlinkedCount, tbdCount, onTbd, onOpenPayment }: { unli
             );
             return (
               <li key={a.key}>
-                {a.payment ? <button className="list-row row-button" onClick={() => onOpenPayment(a.payment!)}>{body}</button> : <a className="list-row" href={itemHref(a.item!.id)}>{body}</a>}
+                {a.payment ? <button className="list-row row-button" onClick={() => onOpenPayment(a.payment!)}>{body}</button> : <a className="list-row" href={itemHref(a.item!.id, a.tab)}>{body}</a>}
               </li>
             );
           })}
@@ -368,6 +378,18 @@ function CategoriesCard({ onEdit }: { onEdit: (c?: BudgetCategory) => void }) {
         })}
       </div>
       <p className="card-text muted">Tap a category to rename or delete it.</p>
+    </Card>
+  );
+}
+
+/** Issues that aren't resolved yet, across all items. Hidden when there are none. */
+function OpenIssues({ onOpen }: { onOpen: (i: Issue) => void }) {
+  const { issues } = useStore().data;
+  const open = issues.filter((x) => x.status !== 'Resolved');
+  if (!open.length) return null;
+  return (
+    <Card title={`Open issues (${open.length})`} className="issues-card">
+      <IssueList issues={open} onOpen={onOpen} showItem />
     </Card>
   );
 }

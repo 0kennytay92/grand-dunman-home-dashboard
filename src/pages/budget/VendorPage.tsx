@@ -13,6 +13,9 @@ import { PaymentRow } from './ItemPage';
 import { budgetHref } from './links';
 import { DocumentRows } from './Documents';
 import { DocumentAdder } from '../../editors/DocumentForm';
+import { IssueForm, MessageForm } from '../../editors/Tracking';
+import { IssueList, MessageTimeline } from './ItemTracking';
+import type { Issue, VendorMessage } from '../../data/types';
 
 /** Digits only, for tel: and WhatsApp links. Singapore numbers without a country code get +65. */
 function phoneDigits(n: string) {
@@ -109,6 +112,11 @@ export function VendorPage({ vendorId }: { vendorId: string }) {
       <h2 className="section-title">Items</h2>
       <ItemList items={items} filters={filters} setFilters={setFilters} hide={['vendor']} emptyText="No items from this vendor yet." />
 
+      <div className="grid-2">
+        <VendorMessages vendorId={vendor.id} />
+        <VendorIssues vendorId={vendor.id} />
+      </div>
+
       <DocumentsForVendor vendorId={vendor.id} />
 
       <Card title="Payments" action={<button className="link" onClick={() => setEditing({})}><Plus size={15} /> Add payment</button>}>
@@ -135,6 +143,31 @@ function DocumentsForVendor({ vendorId }: { vendorId: string }) {
   return (
     <Card title="Documents" action={<DocumentAdder defaults={{ vendorId }}>{(open) => <button className="link" onClick={open}><Plus size={15} /> Upload</button>}</DocumentAdder>}>
       <DocumentRows docs={docs} empty="No quotations, invoices or receipts from this vendor yet." />
+    </Card>
+  );
+}
+
+function VendorMessages({ vendorId }: { vendorId: string }) {
+  const { data } = useStore();
+  const [editing, setEditing] = useState<{ message?: VendorMessage } | null>(null);
+  const messages = data.messages.filter((m) => m.vendorId === vendorId);
+  return (
+    <Card title="Messages" action={<button className="link" onClick={() => setEditing({})}><Plus size={15} /> Add message</button>}>
+      <MessageTimeline messages={messages} onOpen={(message) => setEditing({ message })} empty="No messages yet. Type in what was agreed, or add WhatsApp or email screenshots." />
+      {editing && <MessageForm message={editing.message} vendorId={vendorId} onClose={() => setEditing(null)} />}
+    </Card>
+  );
+}
+
+function VendorIssues({ vendorId }: { vendorId: string }) {
+  const { data } = useStore();
+  const [open, setOpen] = useState<Issue | null>(null);
+  const itemIds = new Set(data.purchases.filter((i) => i.vendorId === vendorId).map((i) => i.id));
+  const issues = data.issues.filter((x) => itemIds.has(x.itemId));
+  return (
+    <Card title="Issues">
+      <IssueList issues={issues} onOpen={setOpen} showItem empty="No issues with this vendor's items." />
+      {open && <IssueForm issue={open} onClose={() => setOpen(null)} />}
     </Card>
   );
 }

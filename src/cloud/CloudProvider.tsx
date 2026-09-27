@@ -240,7 +240,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       SyncEngine.reset(id);
       const current = storeRef.current.getData();
       if (mode === 'download') {
-        storeRef.current.replaceLocal({ ...current, rooms: [], measurements: [], photos: [], designs: [], budgetCategories: [], expenses: [], vendors: [], purchases: [], payments: [], documents: [], tasks: [], floorPlan: undefined });
+        storeRef.current.replaceLocal({ ...current, rooms: [], measurements: [], photos: [], designs: [], budgetCategories: [], expenses: [], vendors: [], purchases: [], payments: [], documents: [], issues: [], messages: [], tasks: [], floorPlan: undefined });
       } else {
         queueEverything(id, current);
       }

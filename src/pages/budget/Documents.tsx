@@ -123,6 +123,12 @@ export function DocumentPage({ docId }: { docId: string }) {
                 <dt>Items</dt>
                 <dd>{items.length ? items.map((i, n) => <span key={i.id}>{n > 0 && ', '}<a className="link inline-link" href={itemHref(i.id, 'documents')}>{i.name}</a></span>) : '—'}</dd>
               </div>
+              {(doc.relatesTo || doc.issueIds?.length) && (
+                <div>
+                  <dt>About</dt>
+                  <dd>{[doc.relatesTo && `The ${doc.relatesTo.toLowerCase()}`, ...data.issues.filter((x) => doc.issueIds?.includes(x.id)).map((x) => `Issue: ${x.title}`)].filter(Boolean).join(', ')}</dd>
+                </div>
+              )}
               <div>
                 <dt>Payments</dt>
                 <dd>{payments.length ? payments.map((p) => `${money(p.amount)} ${p.type.toLowerCase()} (${formatDate(p.date)})`).join(', ') : '—'}</dd>

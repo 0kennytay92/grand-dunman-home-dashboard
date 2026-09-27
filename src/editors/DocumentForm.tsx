@@ -21,6 +21,8 @@ export interface DocDefaults {
   vendorId?: string;
   itemIds?: string[];
   paymentIds?: string[];
+  relatesTo?: 'Delivery' | 'Installation';
+  issueIds?: string[];
 }
 
 /** Checks the size and stores one file (with a preview for pictures). Throws a friendly error. */
@@ -69,6 +71,8 @@ export function DocumentForm({ doc, files, defaults, onClose, onDeleted }: { doc
   const [vendorId, setVendorId] = useState(doc ? (doc.vendorId ?? '') : (defaults?.vendorId ?? ''));
   const [itemIds, setItemIds] = useState<string[]>(doc?.itemIds ?? defaults?.itemIds ?? []);
   const [paymentIds, setPaymentIds] = useState<string[]>(doc?.paymentIds ?? defaults?.paymentIds ?? []);
+  const [relatesTo, setRelatesTo] = useState<string>(doc?.relatesTo ?? defaults?.relatesTo ?? '');
+  const [issueIds, setIssueIds] = useState<string[]>(doc?.issueIds ?? defaults?.issueIds ?? []);
   const [number, setNumber] = useState(doc?.number ?? '');
   const [amount, setAmount] = useState(numText(doc?.amount));
   const [notes, setNotes] = useState(doc?.notes ?? '');
@@ -91,6 +95,7 @@ export function DocumentForm({ doc, files, defaults, onClose, onDeleted }: { doc
     if (Object.keys(e).length) return;
     const fields = {
       type, date, vendorId: vendorId || undefined, itemIds, paymentIds,
+      relatesTo: (relatesTo || undefined) as DocumentFile['relatesTo'], issueIds: issueIds.length ? issueIds : undefined,
       number: number.trim() || undefined, amount: amountNum === undefined ? undefined : Math.round(amountNum * 100) / 100, notes: notes.trim() || undefined,
     };
 
@@ -154,6 +159,8 @@ export function DocumentForm({ doc, files, defaults, onClose, onDeleted }: { doc
       <SelectInput label="Vendor" value={vendorId} onChange={setVendorId} options={[{ value: '', label: '—' }, ...vendors.map((v) => ({ value: v.id, label: v.name }))]} />
       <ItemChecklist value={itemIds} onChange={setItemIds} vendorId={vendorId} />
       <PaymentChecklist value={paymentIds} onChange={setPaymentIds} itemIds={itemIds} />
+      <SelectInput label="About" value={relatesTo} onChange={setRelatesTo} options={[{ value: '', label: 'General' }, { value: 'Delivery', label: 'The delivery (e.g. delivery order)' }, { value: 'Installation', label: 'The installation (e.g. report)' }]} />
+      <IssueChecklist value={issueIds} onChange={setIssueIds} itemIds={itemIds} />
       <FieldRow>
         <TextInput label="Document no. (optional)" value={number} onChange={setNumber} placeholder="e.g. INV-1042" />
         <NumberInput label="Amount on it (optional)" value={amount} onChange={setAmount} suffix="S$" error={errors.amount} hint="For reference – it doesn't change any totals" />
@@ -237,6 +244,32 @@ function PaymentChecklist({ value, onChange, itemIds }: { value: string[]; onCha
                     {money(p.amount)} · {p.type}{p.status === 'Scheduled' ? ' (scheduled)' : ''} · {formatDate(p.date)}
                     {itemIds.length > 1 && itemName(p.itemId) && <span className="muted"> · {itemName(p.itemId)}</span>}
                   </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </Field>
+  );
+}
+
+/** Tick the issues a document is about (e.g. photos or a letter about a defect). */
+function IssueChecklist({ value, onChange, itemIds }: { value: string[]; onChange: (v: string[]) => void; itemIds: string[] }) {
+  const { data } = useStore();
+  const list = data.issues.filter((x) => value.includes(x.id) || itemIds.includes(x.itemId));
+  if (!list.length) return null;
+  const toggle = (id: string) => onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
+  return (
+    <Field label="Issues">
+      {() => (
+        <div className="checklist">
+          <ul>
+            {list.map((x) => (
+              <li key={x.id}>
+                <label className="checkbox-line">
+                  <input type="checkbox" checked={value.includes(x.id)} onChange={() => toggle(x.id)} />
+                  <span>{x.title} <span className="muted">· {x.status}</span></span>
                 </label>
               </li>
             ))}

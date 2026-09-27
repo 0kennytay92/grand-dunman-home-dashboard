@@ -1,4 +1,4 @@
-import type { AmountChange, AmountStatus, AppData, BudgetCategory, DeliveryStatus, DocumentFile, DocumentType, InstallationStatus, Payment, PaymentType, PurchaseItem, Vendor } from './types';
+import type { AmountChange, AmountStatus, AppData, BudgetCategory, DeliveryStatus, DocumentFile, DocumentType, InspectionCondition, InstallationStatus, IssueStatus, MessageChannel, Payment, PaymentType, PurchaseItem, Vendor } from './types';
 
 // ─────────────────────────────────────────────────────────────
 // RENOVATION BUDGET
@@ -29,6 +29,30 @@ export const documentTypes: DocumentType[] = [
   'Warranty', 'Product Specification', 'Installation Guide', 'Other',
 ];
 
+export const deliveryConditions: InspectionCondition[] = ['Good', 'Minor Issue', 'Damaged', 'Wrong Item', 'Incomplete Delivery'];
+export const installationConditions: InspectionCondition[] = ['Good', 'Minor Issue', 'Not Installed Correctly', 'Incomplete Installation', 'Damaged'];
+export const issueStatuses: IssueStatus[] = ['Open', 'Reported to Vendor', 'Fix Scheduled', 'Resolved'];
+export const messageChannels: MessageChannel[] = ['WhatsApp', 'Email', 'Phone Call', 'Meeting', 'SMS', 'Other'];
+export const issueTone = (s: IssueStatus) => (s === 'Resolved' ? 'good' : s === 'Open' ? 'bad' : 'warn');
+export const conditionTone = (c: InspectionCondition) => (c === 'Good' ? 'good' : c === 'Minor Issue' ? 'warn' : 'bad');
+
+/** Adds months to a YYYY-MM-DD date (e.g. warranty start + 24 months). */
+export function addMonths(iso: string, months: number) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1 + months, d));
+  if (t.getUTCDate() !== d) t.setUTCDate(0); // e.g. 31 Jan + 1 month → 28/29 Feb
+  return t.toISOString().slice(0, 10);
+}
+
+/** When the warranty ends: typed in, or worked out from its start and length. */
+export function warrantyEnd(item: PurchaseItem) {
+  const w = item.warranty;
+  if (!w) return undefined;
+  if (w.end) return w.end;
+  if (w.start && w.months) return addMonths(w.start, w.months);
+  return undefined;
+}
+
 /** Documents that show a payment was made. */
 export const receiptTypes: DocumentType[] = ['Receipt', 'Proof of Payment'];
 
@@ -46,6 +70,11 @@ export function invoiceMissing(item: PurchaseItem, payments: Payment[], docs: Do
   if (item.paperworkNotNeeded) return false;
   const paid = payments.some((p) => p.itemId === item.id && p.status === 'Paid' && p.type !== 'Refund');
   return paid && !docsForItem(docs, item.id).some((d) => d.type === 'Invoice');
+}
+
+export function addDays(iso: string, days: number) {
+  const [y, m, d] = iso.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
 }
 
 /** "2.4 MB", "830 KB" */
@@ -247,7 +276,7 @@ function guessType(description: string): PaymentType {
 // ── What's coming up, and what needs attention ───────────────
 
 export interface Upcoming {
-  kind: 'payment' | 'delivery' | 'installation';
+  kind: 'payment' | 'delivery' | 'installation' | 'fix';
   date: string;
   item?: PurchaseItem;
   payment?: Payment;
@@ -257,7 +286,7 @@ const deliveredLike: DeliveryStatus[] = ['Delivered', 'Returned / Exchanged'];
 const installedLike: InstallationStatus[] = ['Not Required', 'Installed', 'Completed'];
 
 /** Scheduled payments, deliveries and installations from today on, soonest first. */
-export function upcoming(data: Pick<AppData, 'purchases' | 'payments'>, today: string): Upcoming[] {
+export function upcoming(data: Pick<AppData, 'purchases' | 'payments'> & Partial<Pick<AppData, 'issues'>>, today: string): Upcoming[] {
   const out: Upcoming[] = [];
   for (const p of data.payments) {
     if (p.status === 'Scheduled' && p.date >= today) out.push({ kind: 'payment', date: p.date, payment: p, item: data.purchases.find((i) => i.id === p.itemId) });
@@ -266,7 +295,10 @@ export function upcoming(data: Pick<AppData, 'purchases' | 'payments'>, today: s
     if (i.expectedDelivery && i.expectedDelivery >= today && !deliveredLike.includes(i.deliveryStatus)) out.push({ kind: 'delivery', date: i.expectedDelivery, item: i });
     if (i.expectedInstallation && i.expectedInstallation >= today && !installedLike.includes(i.installationStatus)) out.push({ kind: 'installation', date: i.expectedInstallation, item: i });
   }
-  return out.sort((a, b) => a.date.localeCompare(b.date));
+  for (const x of data.issues ?? []) {
+    if (x.fixDate && x.fixDate >= today && x.status !== 'Resolved') out.push({ kind: 'fix', date: x.fixDate, item: data.purchases.find((i) => i.id === x.itemId) });
+  }
+  return out.filter((u) => u.kind === 'payment' || u.item).sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export interface Attention {
@@ -275,12 +307,13 @@ export interface Attention {
   title: string;
   detail: string;
   date?: string; // when it was due / expected
+  tab?: 'payments' | 'documents' | 'delivery' | 'installation' | 'issues' | 'warranty'; // where on the item page to look
   item?: PurchaseItem;
   payment?: Payment;
 }
 
 /** Things to look at: overdue payments, deliveries and installations, payments to link, amounts to find out. */
-export function needsAttention(data: Pick<AppData, 'purchases' | 'payments' | 'documents'>, today: string): Attention[] {
+export function needsAttention(data: Pick<AppData, 'purchases' | 'payments' | 'documents' | 'issues'>, today: string): Attention[] {
   const out: Attention[] = [];
   for (const p of data.payments) {
     if (p.status === 'Scheduled' && p.date < today) {
@@ -290,19 +323,28 @@ export function needsAttention(data: Pick<AppData, 'purchases' | 'payments' | 'd
   }
   for (const i of data.purchases) {
     if (i.expectedDelivery && i.expectedDelivery < today && !deliveredLike.includes(i.deliveryStatus) && i.deliveryStatus !== 'Partially Delivered') {
-      out.push({ key: `del-${i.id}`, tone: 'bad', title: 'Delivery overdue', detail: i.name, date: i.expectedDelivery, item: i });
+      out.push({ key: `del-${i.id}`, tab: 'delivery', tone: 'bad', title: 'Delivery overdue', detail: i.name, date: i.expectedDelivery, item: i });
     }
-    if (i.deliveryStatus === 'Delivery Issue') out.push({ key: `deli-${i.id}`, tone: 'bad', title: 'Delivery issue', detail: i.name, item: i });
+    if (i.deliveryStatus === 'Delivery Issue') out.push({ key: `deli-${i.id}`, tab: 'issues', tone: 'bad', title: 'Delivery issue', detail: i.name, item: i });
     if (i.expectedInstallation && i.expectedInstallation < today && !installedLike.includes(i.installationStatus)) {
-      out.push({ key: `ins-${i.id}`, tone: 'bad', title: 'Installation overdue', detail: i.name, date: i.expectedInstallation, item: i });
+      out.push({ key: `ins-${i.id}`, tab: 'installation', tone: 'bad', title: 'Installation overdue', detail: i.name, date: i.expectedInstallation, item: i });
     }
-    if (i.installationStatus === 'Installation Issue') out.push({ key: `insi-${i.id}`, tone: 'bad', title: 'Installation issue', detail: i.name, item: i });
+    if (i.installationStatus === 'Installation Issue') out.push({ key: `insi-${i.id}`, tab: 'issues', tone: 'bad', title: 'Installation issue', detail: i.name, item: i });
+    const open = data.issues.filter((x) => x.itemId === i.id && x.status !== 'Resolved');
+    const flagged = i.deliveryStatus === 'Delivery Issue' || i.installationStatus === 'Installation Issue';
+    if (open.length && !flagged) out.push({ key: `iss-${i.id}`, tab: 'issues', tone: 'bad', title: open.length === 1 ? 'Open issue' : `${open.length} open issues`, detail: `${i.name} – ${open[0].title}`, item: i });
+    if (i.deliveryStatus === 'Delivered' && !i.deliveryInspection) out.push({ key: `insp-${i.id}`, tab: 'delivery', tone: 'warn', title: 'Delivered but not inspected', detail: i.name, item: i });
+    if (i.deliveryStatus === 'Delivered' && i.installationStatus === 'Awaiting Installation' && !i.expectedInstallation) {
+      out.push({ key: `nosch-${i.id}`, tab: 'installation', tone: 'warn', title: 'Installation not scheduled', detail: i.name, item: i });
+    }
+    const end = warrantyEnd(i);
+    if (end && end >= today && end <= addDays(today, 30)) out.push({ key: `war-${i.id}`, tab: 'warranty', tone: 'info', title: 'Warranty ending soon', detail: i.name, date: end, item: i });
   }
   // Paperwork: after the overdue things, as it's less urgent.
   for (const i of data.purchases) {
-    if (invoiceMissing(i, data.payments, data.documents)) out.push({ key: `inv-${i.id}`, tone: 'warn', title: 'Invoice missing', detail: i.name, item: i });
+    if (invoiceMissing(i, data.payments, data.documents)) out.push({ key: `inv-${i.id}`, tab: 'documents', tone: 'warn', title: 'Invoice missing', detail: i.name, item: i });
     const noReceipt = paymentsMissingReceipt(i, data.payments, data.documents);
-    if (noReceipt.length) out.push({ key: `rec-${i.id}`, tone: 'warn', title: 'Receipt missing', detail: `${i.name} – ${noReceipt.length} payment${noReceipt.length === 1 ? '' : 's'}`, item: i });
+    if (noReceipt.length) out.push({ key: `rec-${i.id}`, tab: 'documents', tone: 'warn', title: 'Receipt missing', detail: `${i.name} – ${noReceipt.length} payment${noReceipt.length === 1 ? '' : 's'}`, item: i });
   }
   return out;
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Camera, ChevronLeft, CreditCard, FileText, FileUp, History, LayoutGrid, Paperclip, Pencil, Plus, Star, Trash2 } from 'lucide-react';
+import { AlertTriangle, MessageCircle, ShieldCheck, Truck, Wrench, Camera, ChevronLeft, CreditCard, FileText, FileUp, History, LayoutGrid, Paperclip, Pencil, Plus, Star, Trash2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useRoomName, useStore } from '../../data/store';
 import { deleteImages, useImageUrl } from '../../data/images';
@@ -16,12 +16,18 @@ import { tabHref } from '../room/tabs';
 import { ItemThumb } from './ItemList';
 import { DocumentAdder } from '../../editors/DocumentForm';
 import { DocumentRows } from './Documents';
+import { IssuesTab, Journey, MessagesTab, StageTab, WarrantyTab } from './ItemTracking';
 import { budgetHref, itemHref, vendorHref, type ItemTab } from './links';
 
 const tabs: { id: ItemTab; label: string; icon: LucideIcon }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutGrid },
   { id: 'payments', label: 'Payments', icon: CreditCard },
   { id: 'documents', label: 'Documents', icon: FileText },
+  { id: 'delivery', label: 'Delivery', icon: Truck },
+  { id: 'installation', label: 'Installation', icon: Wrench },
+  { id: 'messages', label: 'Messages', icon: MessageCircle },
+  { id: 'issues', label: 'Issues', icon: AlertTriangle },
+  { id: 'warranty', label: 'Warranty', icon: ShieldCheck },
   { id: 'photos', label: 'Photos & videos', icon: Camera },
 ];
 
@@ -54,7 +60,11 @@ export function ItemPage({ itemId, tab: tabParam }: { itemId: string; tab?: stri
   const category = data.budgetCategories.find((c) => c.id === item.categoryId);
   const payments = data.payments.filter((p) => p.itemId === item.id).sort((a, b) => b.date.localeCompare(a.date));
   const docs = docsForItem(data.documents, item.id);
-  const counts: Partial<Record<ItemTab, number>> = { payments: payments.length, documents: docs.length, photos: item.photoIds.length + (item.videoIds?.length ?? 0) };
+  const openIssues = data.issues.filter((x) => x.itemId === item.id && x.status !== 'Resolved').length;
+  const counts: Partial<Record<ItemTab, number>> = {
+    payments: payments.length, documents: docs.length, photos: item.photoIds.length + (item.videoIds?.length ?? 0),
+    messages: data.messages.filter((m) => m.itemIds.includes(item.id)).length, issues: openIssues,
+  };
 
   return (
     <>
@@ -118,15 +128,25 @@ export function ItemPage({ itemId, tab: tabParam }: { itemId: string; tab?: stri
           <a key={id} href={itemHref(item.id, id)} className={`room-tab ${tab === id ? 'active' : ''}`} aria-current={tab === id ? 'page' : undefined}>
             <Icon size={16} strokeWidth={1.9} />
             <span>{label}</span>
-            {counts[id] ? <span className="tab-count">{counts[id]}</span> : null}
+            {counts[id] ? <span className={`tab-count ${id === 'issues' ? 'alert' : ''}`}>{counts[id]}</span> : null}
           </a>
         ))}
       </nav>
 
       <div className="room-tab-body">
-        {tab === 'overview' && <Overview item={item} onEdit={() => setEditing('item')} />}
+        {tab === 'overview' && (
+          <>
+            <Card title="Journey" className="journey-card"><Journey item={item} /></Card>
+            <Overview item={item} onEdit={() => setEditing('item')} />
+          </>
+        )}
         {tab === 'payments' && <PaymentsTab payments={payments} onAdd={() => setEditing({})} onOpen={(p) => setEditing({ payment: p })} />}
         {tab === 'documents' && <DocumentsTab item={item} />}
+        {tab === 'delivery' && <StageTab item={item} stage="delivery" />}
+        {tab === 'installation' && <StageTab item={item} stage="installation" />}
+        {tab === 'messages' && <MessagesTab item={item} />}
+        {tab === 'issues' && <IssuesTab item={item} />}
+        {tab === 'warranty' && <WarrantyTab item={item} />}
         {tab === 'photos' && <PhotosTab item={item} />}
       </div>
 

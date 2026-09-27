@@ -52,6 +52,18 @@ Sections: Home · Rooms · Floor Plan · Measurements · Photos · Interior Desi
   - **Receipts / proof of payment** can be attached straight from a payment (e.g. a screenshot of
     the bank transfer). Items with payments but no invoice, and paid payments with no receipt, show
     under "Needs attention" – switch this off per item when no paperwork is expected.
+  - **Delivery & installation**: tap **Mark delivered** (or **Mark installed**), take photos, choose
+    how it went (Good, Minor issue, Damaged, Wrong item, Incomplete…) and **Accept** – or **Report
+    issue**. Set the expected date right on the item's Delivery / Installation tab.
+  - **Issues**: every problem is tracked (Open → Reported to vendor → Fix scheduled → Resolved) with
+    photos; resolving the last delivery or installation issue puts the item back on track.
+  - **Messages**: keep a timeline of what each vendor said – type it in or add WhatsApp / email
+    screenshots (the app isn't connected to WhatsApp or email).
+  - **Warranty**: start date and length (the end date is worked out), provider, notes and warranty
+    documents, with a countdown.
+  - Each item shows its **journey**: payment, delivery and installation on separate lines.
+  - **Needs attention** also covers: delivered but not inspected, installation not scheduled, open
+    issues, and warranties ending within 30 days. Booked fixes appear under **Coming up**.
   - Documents and videos are stored on your device and, when syncing, in the same private online
     storage as your photos – only people in your home can open them.
   - **Vendors** have their own page with contact buttons (call, WhatsApp, email) and a money summary.
