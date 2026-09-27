@@ -4,6 +4,7 @@ import { useStore } from '../../data/store';
 import { photoFilters, type PhotoFilter } from '../../data/photoTags';
 import type { PhotoTag, Room } from '../../data/types';
 import { formatDate } from '../../format';
+import { SamplePhotosNote } from '../../components/SamplePhotos';
 import { PhotoAdder } from '../../editors/PhotoAdder';
 import { PhotoThumb } from '../../components/PhotoThumb';
 import { PhotoViewer } from '../../components/PhotoViewer';
@@ -29,6 +30,8 @@ export function PhotosTab({ room }: { room: Room }) {
           )}
         </PhotoAdder>
       </div>
+
+      <SamplePhotosNote roomId={room.id} />
 
       {shown.length === 0 ? (
         <EmptyState>{all.length ? 'No photos in this category.' : `No photos of the ${room.name.toLowerCase()} yet. Tap "Add Photo" to take or choose some.`}</EmptyState>

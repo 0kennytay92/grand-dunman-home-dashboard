@@ -7,6 +7,7 @@ import { formatDate } from '../format';
 import { PhotoAdder } from '../editors/PhotoAdder';
 import { PhotoThumb } from '../components/PhotoThumb';
 import { PhotoViewer } from '../components/PhotoViewer';
+import { SamplePhotosNote } from '../components/SamplePhotos';
 import { Badge, Chips, EmptyState, PageHeader, statusTone } from '../components/ui';
 
 export function PhotosPage() {
@@ -47,6 +48,8 @@ export function PhotosPage() {
         </select>
         <Chips options={photoFilters} value={filter} onChange={setFilter} />
       </div>
+
+      <SamplePhotosNote />
 
       {shown.length === 0 ? (
         <EmptyState>{photos.length ? 'No photos match these filters.' : 'No photos yet. Tap "Add Photo" to take or choose some.'}</EmptyState>

@@ -17,6 +17,7 @@ import { FloorPlanPage } from './pages/FloorPlanPage';
 import { StoreProvider } from './data/store';
 import { CloudProvider } from './cloud/CloudProvider';
 import { SyncPage } from './pages/SyncPage';
+import { NotesPage } from './pages/NotesPage';
 
 function Page({ path }: { path: string }) {
   const roomMatch = path.match(/^\/rooms\/([\w-]+)(?:\/(\w+))?$/);
@@ -36,6 +37,7 @@ function Page({ path }: { path: string }) {
 
   switch (path) {
     case '/rooms': return <RoomsPage />;
+    case '/notes': return <NotesPage />;
     case '/floor-plan': return <FloorPlanPage />;
     case '/measurements': return <MeasurementsPage />;
     case '/photos': return <PhotosPage />;

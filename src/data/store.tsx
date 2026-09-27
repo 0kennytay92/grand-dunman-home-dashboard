@@ -22,7 +22,7 @@ type Collections = Omit<AppData, 'version' | 'project' | 'floorPlan'>;
 export type CollectionName = keyof Collections;
 type ItemOf<K extends CollectionName> = Collections[K][number];
 
-const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'tasks'];
+const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'notes', 'tasks'];
 
 /** Checks that a file or saved value looks like our data, filling any missing lists. */
 export function parseData(raw: unknown): AppData {
@@ -46,6 +46,7 @@ export function parseData(raw: unknown): AppData {
     documents: [],
     issues: [],
     messages: [],
+    notes: [],
     tasks: [],
   };
   for (const k of collectionNames) {
@@ -61,6 +62,7 @@ export function parseData(raw: unknown): AppData {
   const oldTags: Record<string, PhotoTag> = { Before: 'Existing Condition', Progress: 'Renovation Progress', Inspiration: 'Design Reference' };
   data.photos = data.photos.map((p) => (oldTags[p.tag] ? { ...p, tag: oldTags[p.tag] } : p));
   data.purchases = data.purchases.map((i) => (Array.isArray(i.photoIds) ? i : { ...i, photoIds: [] }));
+  data.notes = data.notes.map((x) => (Array.isArray(x.photoIds) ? x : { ...x, photoIds: [] }));
   data.documents = data.documents.map((x) => (Array.isArray(x.itemIds) && Array.isArray(x.paymentIds) ? x : { ...x, itemIds: x.itemIds ?? [], paymentIds: x.paymentIds ?? [] }));
   return data;
 }
@@ -184,6 +186,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       : name === 'documents' ? [id]
       : name === 'issues' ? d0.issues.find((x) => x.id === id)?.photoIds ?? []
       : name === 'messages' ? d0.messages.find((x) => x.id === id)?.photoIds ?? []
+      : name === 'notes' ? d0.notes.find((x) => x.id === id)?.photoIds ?? []
       : name === 'vendors' ? d0.messages.filter((x) => x.vendorId === id).flatMap((x) => x.photoIds)
       : [];
     deleteImages(imageIds, { cloud: true }).catch(() => {});
@@ -204,6 +207,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         // Items and payments are kept too, as "whole home".
         next.purchases = d.purchases.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x));
         next.payments = d.payments.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x));
+        next.notes = d.notes.map((x) => (x.roomId === id ? { ...x, roomId: undefined } : x)); // notes are kept
       }
       if (name === 'purchases') {
         // Payments are money records: they stay, just no longer linked to the item.
@@ -254,6 +258,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ...gone.filter((r) => r.collection === 'documents').map((r) => r.id),
       ...gone.filter((r) => r.collection === 'issues').flatMap((r) => before.issues.find((x) => x.id === r.id)?.photoIds ?? []),
       ...gone.filter((r) => r.collection === 'messages').flatMap((r) => before.messages.find((x) => x.id === r.id)?.photoIds ?? []),
+      ...gone.filter((r) => r.collection === 'notes').flatMap((r) => before.notes.find((x) => x.id === r.id)?.photoIds ?? []),
       ...gone.filter((r) => r.collection === 'designs').flatMap((r) => {
         const d = before.designs.find((x) => x.id === r.id);
         return d ? designImageIds(d) : [];
@@ -356,6 +361,7 @@ export async function readBackup(text: string): Promise<AppData> {
   }));
   data.issues = data.issues.map((x) => ({ ...x, photoIds: keep(x.photoIds) }));
   data.messages = data.messages.map((x) => ({ ...x, photoIds: keep(x.photoIds) }));
+  data.notes = data.notes.map((x) => ({ ...x, photoIds: keep(x.photoIds ?? []) }));
   // Documents whose file isn't in the backup are kept (their details are still useful); they show as "file missing".
   return data;
 }
@@ -376,6 +382,7 @@ export function blankData(current: AppData): AppData {
     documents: [],
     issues: [],
     messages: [],
+    notes: current.notes, // your own notes are kept
     tasks: [],
   };
 }

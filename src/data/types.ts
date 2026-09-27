@@ -258,6 +258,17 @@ export interface VendorMessage {
   photoIds: string[]; // screenshots
 }
 
+/** A rough note: anything worth jotting down. */
+export interface Note {
+  id: string;
+  text: string;
+  roomId?: string; // optional: which room it's about
+  pinned?: boolean; // kept at the top
+  photoIds: string[];
+  createdAt: string; // ISO date and time
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -299,6 +310,7 @@ export interface AppData {
   documents: DocumentFile[];
   issues: Issue[];
   messages: VendorMessage[];
+  notes: Note[];
   tasks: Task[];
   floorPlan?: FloorPlanImage;
 }

@@ -8,7 +8,7 @@ import type { AppData } from '../data/types';
 // on different devices merge instead of overwriting each other.
 // ─────────────────────────────────────────────────────────────
 
-export const listNames = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'tasks'] as const;
+export const listNames = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'notes', 'tasks'] as const;
 export type ListName = (typeof listNames)[number];
 const metaIds = ['project', 'floorPlan'] as const;
 

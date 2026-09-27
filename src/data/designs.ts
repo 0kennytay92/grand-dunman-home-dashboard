@@ -30,7 +30,7 @@ export const itemImageIds = (i: PurchaseItem) => [
   ...i.photoIds, ...(i.videoIds ?? []), ...(i.deliveryInspection?.photoIds ?? []), ...(i.installationInspection?.photoIds ?? []),
 ];
 
-export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan' | 'purchases' | 'documents' | 'issues' | 'messages'>) {
+export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorPlan' | 'purchases' | 'documents' | 'issues' | 'messages' | 'notes'>) {
   return [
     ...(data.floorPlan ? [data.floorPlan.imageId] : []),
     ...data.photos.filter((p) => p.hasImage).map((p) => p.id),
@@ -40,6 +40,7 @@ export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorP
     ...data.documents.map((d) => d.id),
     ...data.issues.flatMap((x) => x.photoIds),
     ...data.messages.flatMap((x) => x.photoIds),
+    ...data.notes.flatMap((x) => x.photoIds),
   ];
 }
 

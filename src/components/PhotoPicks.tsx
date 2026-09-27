@@ -20,6 +20,11 @@ export function usePhotoPicks(initial: string[]) {
     add: (more: File[]) => setFiles((f) => [...f, ...more]),
     removeId: (id: string) => setIds((x) => x.filter((i) => i !== id)),
     removeFile: (i: number) => setFiles((f) => f.filter((_, j) => j !== i)),
+    /** Empties the picker (e.g. after the form is saved and stays open for the next one). */
+    reset: () => {
+      setIds([]);
+      setFiles([]);
+    },
     /** Stores new photos and deletes removed ones. Returns the final list of photo ids. */
     async commit(): Promise<string[]> {
       requestPersistentStorage();

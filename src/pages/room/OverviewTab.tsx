@@ -10,6 +10,9 @@ import { PhotoThumb } from '../../components/PhotoThumb';
 import { TaskEditor } from '../../editors/TaskEditor';
 import { Card, EmptyState } from '../../components/ui';
 import { tabHref } from './tabs';
+import { href } from '../../router';
+import { NoteEditor, NoteGrid, QuickNote } from '../NotesPage';
+import type { Note } from '../../data/types';
 
 export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () => void }) {
   const { data } = useStore();
@@ -53,6 +56,8 @@ export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () =
         </Card>
       </div>
 
+      <RoomNotes roomId={room.id} />
+
       <Card title="Latest photos" action={<a className="link" href={tabHref(room.id, 'photos')}>All photos <ChevronRight size={15} /></a>}>
         {latestPhotos.length === 0 ? (
           <EmptyState>No photos yet. Add some in the Photos tab.</EmptyState>
@@ -69,5 +74,24 @@ export function OverviewTab({ room, onEditRoom }: { room: Room; onEditRoom: () =
 
       {addingTask && <TaskEditor roomId={room.id} onClose={() => setAddingTask(false)} />}
     </>
+  );
+}
+
+/** Rough notes tagged with this room, and a box to add one. */
+function RoomNotes({ roomId }: { roomId: string }) {
+  const { notes } = useStore().data;
+  const [editing, setEditing] = useState<Note | null>(null);
+  const mine = notes.filter((n) => n.roomId === roomId).sort((a, b) => Number(!!b.pinned) - Number(!!a.pinned) || b.updatedAt.localeCompare(a.updatedAt));
+  return (
+    <section className="room-notes">
+      <div className="section-head">
+        <h2 className="section-title">Rough notes</h2>
+        <a className="link" href={href('/notes')}>All notes <ChevronRight size={15} /></a>
+      </div>
+      <QuickNote roomId={roomId} />
+      {mine.length > 0 && <NoteGrid notes={mine.slice(0, 6)} onOpen={setEditing} showRoom={false} />}
+      {mine.length > 6 && <p className="row-sub">+ {mine.length - 6} more on the Notes page</p>}
+      {editing && <NoteEditor note={editing} onClose={() => setEditing(null)} />}
+    </section>
   );
 }

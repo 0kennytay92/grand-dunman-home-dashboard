@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Pencil, Ruler, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Pencil, Ruler, Trash2, X } from 'lucide-react';
 import { useImageUrl } from '../data/images';
 import { useRoomName, useStore } from '../data/store';
 import { labelLines, layoutLabels, type Placement } from '../data/labelLayout';
@@ -20,7 +20,7 @@ type Mode =
  * Measurements can be pinned onto the photo as labels; the photo file itself is never changed.
  */
 export function PhotoViewer({ photos, startId, onClose }: { photos: Photo[]; startId: string; onClose: () => void }) {
-  const { data, upsert, notify } = useStore();
+  const { data, upsert, remove, notify } = useStore();
   const roomName = useRoomName();
   const [currentId, setCurrentId] = useState(startId);
   const [mode, setMode] = useState<Mode>({ kind: 'view' });
@@ -56,6 +56,19 @@ export function PhotoViewer({ photos, startId, onClose }: { photos: Photo[]; sta
 
   const visibleLabels = labels.filter((m) => !(mode.kind === 'place' && mode.moving?.id === m.id));
   const placements = box ? layoutLabels(visibleLabels, box.width, box.height, box.width < 560) : {};
+
+  /** Deletes the photo on screen, then shows the next one (or closes when it was the last). */
+  const deleteThis = () => {
+    if (!photo) return;
+    const pinned = data.measurements.filter((m) => m.pin?.photoId === photo.id).length;
+    const extra = pinned ? `\n\nIts ${pinned} measurement${pinned > 1 ? 's' : ''} will stay in the room's Measurements list.` : '';
+    if (!window.confirm(`Delete this ${photo.hasImage ? 'photo' : 'sample photo'}? This cannot be undone.${extra}`)) return;
+    const next = photos[index + 1] ?? photos[index - 1];
+    remove('photos', photo.id);
+    notify('Photo deleted');
+    if (next) setCurrentId(next.id);
+    else onClose();
+  };
 
   const go = (step: number) => {
     const next = photos[index + step];
@@ -128,6 +141,7 @@ export function PhotoViewer({ photos, startId, onClose }: { photos: Photo[]; sta
             </button>
           )}
           <button className="viewer-btn" onClick={() => setMode({ kind: 'details' })} aria-label="Edit photo details"><Pencil size={18} /></button>
+          <button className="viewer-btn" onClick={deleteThis} aria-label="Delete photo"><Trash2 size={18} /></button>
           <button className="viewer-btn" onClick={onClose} aria-label="Close"><X size={22} /></button>
         </div>
       </header>

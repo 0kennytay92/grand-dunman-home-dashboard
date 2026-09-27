@@ -3,7 +3,7 @@
 A mobile-friendly dashboard for managing the renovation of our Grand Dunman home.
 It starts with sample (made-up) data that you can edit, delete or clear.
 
-Sections: Home · Rooms · Floor Plan · Measurements · Photos · Interior Designs · Renovation Budget · Settings & Backup
+Sections: Home · Notes · Rooms · Floor Plan · Measurements · Photos · Interior Designs · Renovation Budget · Settings & Backup
 
 ## What you can do
 
@@ -72,6 +72,12 @@ Sections: Home · Rooms · Floor Plan · Measurements · Photos · Interior Desi
   - **Import items** loads a list of items from a `.json` file; items already in the app are skipped.
   - Payments recorded before this upgrade were kept and show under "Payments not linked to an item"
     until you link each one to its item.
+- **Notes** (menu → Notes): rough notes – type anything, optionally add photos or tag a room, and pin
+  important ones to the top. Search and filter by room. A room's page shows its notes and has its own
+  quick-note box. Notes sync like everything else and are kept by "Start fresh".
+- **Sample photos**: the grey example pictures can be removed in one tap ("Remove sample photos" on
+  the Photos page or a room's Photos tab). Any photo can also be deleted with the bin button when
+  viewing it full screen.
 - **Tick off tasks** on the Home page or on a room's page.
 - **Add real photos**: in a room's Photos tab (or the Photos page) tap **Add Photo**. On iPhone you can
   *Take Photo* or pick from your *Photo Library*. Each photo has a room, date, description and

@@ -245,5 +245,6 @@ export const sampleData: AppData = {
   documents: [],
   issues: [],
   messages: [],
+  notes: [],
   tasks,
 };
