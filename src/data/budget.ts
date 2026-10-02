@@ -348,3 +348,10 @@ export function needsAttention(data: Pick<AppData, 'purchases' | 'payments' | 'd
   }
   return out;
 }
+
+/** Room names corrected after release (e.g. "Power Room" was a typo for "Powder Room"). Same object when nothing to do. */
+export function upgradeRoomNames(data: AppData): AppData {
+  const fix = (name: string) => (/^power room$/i.test(name.trim()) ? 'Powder Room' : name);
+  if (!data.rooms.some((r) => fix(r.name) !== r.name)) return data;
+  return { ...data, rooms: data.rooms.map((r) => (fix(r.name) !== r.name ? { ...r, name: fix(r.name) } : r)) };
+}

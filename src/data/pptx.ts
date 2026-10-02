@@ -141,7 +141,7 @@ const aliases: Record<string, string[]> = {
   'bedroom-3': ['bedroom 3', 'bedroom three', 'bed 3', 'br3', 'guest room', 'bath 3'],
   'junior-master': ['junior master', 'jr master', 'junior master bath'],
   yard: ['yard'],
-  'power-room': ['power room'],
+  'power-room': ['powder room', 'power room'],
   utility: ['utility'],
   store: ['store room', 'storeroom', 'store'],
 };

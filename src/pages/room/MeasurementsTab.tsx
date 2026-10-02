@@ -35,6 +35,7 @@ export function MeasurementsTab({ room }: { room: Room }) {
               <button key={k} type="button" className={`size-tile ${m ? '' : 'empty'}`} onClick={() => setEditing(m ? { item: m } : { kind: k })}>
                 <span className="fact-label">{kindInfo[k].label}</span>
                 {m ? <span className="size-value">{formatMeasurement(m, unit)}</span> : <span className="size-add"><Plus size={16} /> Add</span>}
+                {m?.fromPlan && <span className="from-plan">from plan</span>}
               </button>
             );
           })}
@@ -70,7 +71,7 @@ export function MeasurementsTab({ room }: { room: Room }) {
                       <button className="list-row wrap row-button" onClick={() => setEditing({ item: m })}>
                         <div className="grow">
                           <p className="row-title">{m.item}</p>
-                          {(m.note || m.pin) && <p className="row-sub">{[m.pin && 'On a photo', m.note].filter(Boolean).join(' · ')}</p>}
+                          {(m.note || m.pin || m.fromPlan) && <p className="row-sub">{m.fromPlan && <span className="from-plan">from plan</span>}{[m.pin && 'On a photo', m.note].filter(Boolean).join(' · ')}</p>}
                         </div>
                         <span className="dims mono">{formatMeasurement(m, unit)}</span>
                       </button>

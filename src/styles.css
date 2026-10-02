@@ -1362,3 +1362,63 @@ button.list-row.row-button { display: flex; align-items: center; gap: 14px; padd
 .pin-icon { color: var(--accent); }
 .room-notes { margin-bottom: 16px; }
 .room-notes .section-title { margin-top: 8px; }
+
+/* Floor plan ruler */
+.ruler-chip { display: inline-flex; align-items: center; gap: 5px; }
+.ruler-panel {
+  display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius-sm); box-shadow: var(--shadow);
+}
+.ruler-panel .chips { margin-bottom: 0; }
+.ruler-row { display: flex; align-items: center; justify-content: space-between; gap: 10px 16px; flex-wrap: wrap; }
+.ruler-toggles { display: flex; gap: 14px; flex-wrap: wrap; }
+.ruler-toggles .checkbox-line { font-size: 14px; }
+.ruler-toggles .checkbox-line input { width: 18px; height: 18px; accent-color: var(--accent); }
+.ruler-readout { display: flex; align-items: baseline; gap: 4px 10px; flex-wrap: wrap; }
+.ruler-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--accent); }
+.modal-value { margin: 0; }
+.ruler-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ruler-hint { margin: 0; }
+@media (max-width: 560px) {
+  .ruler-actions { width: 100%; }
+  .ruler-actions .btn { flex: 1 1 auto; }
+}
+.fp-canvas.ruler-on .fp-label { pointer-events: none; }
+.ruler-svg { z-index: 3; pointer-events: none; overflow: visible; }
+.ruler-current, .ruler-saved { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ruler-current { stroke: #e2562b; stroke-width: 3; }
+.ruler-current.k-area { fill: rgb(226 86 43 / 0.15); }
+.ruler-saved { stroke: #2f6fde; stroke-width: 2.5; stroke-dasharray: 7 4; }
+.ruler-saved.k-area { fill: rgb(47 111 222 / 0.1); }
+.ruler-saved.selected { stroke-width: 4; stroke-dasharray: none; }
+.ruler-label {
+  position: absolute; z-index: 4; transform: translate(-50%, -140%); pointer-events: none; white-space: nowrap;
+  padding: 2px 7px; border-radius: 999px; background: #e2562b; color: #fff;
+  font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+.ruler-label.big { transform: translate(-50%, -50%); font-size: 14px; padding: 4px 10px; }
+.ruler-label.saved { background: #2f6fde; transform: translate(-50%, 30%); font-weight: 600; }
+.ruler-label.saved strong { font-weight: 700; }
+.ruler-label.saved.selected { box-shadow: 0 0 0 3px rgb(47 111 222 / 0.3); }
+.ruler-capture { position: absolute; inset: 0; z-index: 5; cursor: crosshair; touch-action: manipulation; }
+.ruler-handle {
+  position: absolute; z-index: 6; width: 26px; height: 26px; margin: 0; padding: 0; transform: translate(-50%, -50%);
+  border-radius: 50%; border: 3px solid #e2562b; background: rgb(255 255 255 / 0.85); cursor: grab; touch-action: none;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+}
+.ruler-handle::after { content: ''; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #e2562b; }
+.ruler-handle.dragging { cursor: grabbing; background: rgb(255 255 255 / 0.4); }
+.ruler-loupe {
+  position: fixed; z-index: 70; border-radius: 50%; overflow: hidden; pointer-events: none;
+  border: 3px solid #fff; box-shadow: 0 4px 18px rgb(0 0 0 / 0.35); background: var(--surface);
+}
+.ruler-loupe svg { display: block; }
+.loupe-bg { fill: var(--surface); }
+.loupe-room { fill: none; stroke: var(--ink-3); stroke-width: 1.5; }
+.loupe-cross { stroke: #e2562b; stroke-width: 1; opacity: 0.7; }
+.ruler-row-item.selected .row-title { color: #2f6fde; }
+.from-plan {
+  display: inline-block; margin-right: 6px; padding: 0 6px; border-radius: 999px; vertical-align: 1px;
+  background: var(--info-soft); color: var(--info); font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+}
+.size-tile .from-plan { margin: 4px 0 0; align-self: flex-start; }

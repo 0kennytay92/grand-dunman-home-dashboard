@@ -3,7 +3,7 @@ import { sampleData } from './sampleData';
 import type { AppData, PhotoTag, Project } from './types';
 import { upgradeMeasurements } from './measurementKinds';
 import { designImageIds, imageIdsInUse, itemImageIds, upgradeDesigns } from './designs';
-import { totalsFor, upgradeBudget } from './budget';
+import { totalsFor, upgradeBudget, upgradeRoomNames } from './budget';
 import { applyRows, diffKeys, itemValue, type ItemKey, type RemoteRow } from '../cloud/changes';
 import { deleteImages, exportImages, importImages, pruneImages, type ImageBundle } from './images';
 
@@ -22,7 +22,7 @@ type Collections = Omit<AppData, 'version' | 'project' | 'floorPlan'>;
 export type CollectionName = keyof Collections;
 type ItemOf<K extends CollectionName> = Collections[K][number];
 
-const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'notes', 'tasks'];
+const collectionNames: CollectionName[] = ['rooms', 'measurements', 'photos', 'designs', 'budgetCategories', 'expenses', 'vendors', 'purchases', 'payments', 'documents', 'issues', 'messages', 'notes', 'planMeasures', 'tasks'];
 
 /** Checks that a file or saved value looks like our data, filling any missing lists. */
 export function parseData(raw: unknown): AppData {
@@ -47,6 +47,7 @@ export function parseData(raw: unknown): AppData {
     issues: [],
     messages: [],
     notes: [],
+    planMeasures: [],
     tasks: [],
   };
   for (const k of collectionNames) {
@@ -147,7 +148,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // Bring older budget data up to date (runs again if old records arrive from another device).
   // The upgraded records are normal changes, so they are saved and synced like any edit.
   useEffect(() => {
-    const upgraded = upgradeBudget(data);
+    const upgraded = upgradeRoomNames(upgradeBudget(data));
     if (upgraded === data) return;
     try {
       if (data.expenses.some((e) => !e.migrated) && !localStorage.getItem(PRE_UPGRADE_KEY)) {
@@ -382,6 +383,7 @@ export function blankData(current: AppData): AppData {
     documents: [],
     issues: [],
     messages: [],
+    planMeasures: current.planMeasures, // floor plan ruler measurements are kept
     notes: current.notes, // your own notes are kept
     tasks: [],
   };

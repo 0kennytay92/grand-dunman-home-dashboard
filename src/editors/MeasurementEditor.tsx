@@ -55,6 +55,8 @@ export function MeasurementEditor({ measurement, roomId, kind: startKind, onClos
       item: name,
       ...values,
       note: note.trim() || undefined,
+      // Still a floor plan estimate unless the sizes were changed (e.g. after measuring on site).
+      fromPlan: measurement?.fromPlan && info.fields.every((f) => values[f.field] === measurement[f.field]) ? true : undefined,
     });
     if (existingSingle && measurement) remove('measurements', measurement.id);
     notify(measurement || existingSingle ? 'Measurement updated' : 'Measurement added');

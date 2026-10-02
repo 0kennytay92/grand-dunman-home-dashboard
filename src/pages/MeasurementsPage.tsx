@@ -64,7 +64,7 @@ export function MeasurementsPage() {
                   <button className="list-row wrap row-button" onClick={() => setEditing({ item: m })}>
                     <div className="grow">
                       <p className="row-title">{m.item}</p>
-                      <p className="row-sub">{[!kindInfo[m.kind].single && kindInfo[m.kind].label, m.pin && 'On a photo', m.note].filter(Boolean).join(' · ')}</p>
+                      <p className="row-sub">{m.fromPlan && <span className="from-plan">from plan</span>}{[!kindInfo[m.kind].single && kindInfo[m.kind].label, m.pin && 'On a photo', m.note].filter(Boolean).join(' · ')}</p>
                     </div>
                     <span className="dims mono">{formatMeasurement(m, unit)}</span>
                   </button>

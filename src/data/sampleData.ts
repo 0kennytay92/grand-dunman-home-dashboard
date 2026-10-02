@@ -29,7 +29,7 @@ const rooms: Room[] = [
   { id: 'bedroom-3', name: 'Bedroom 3', includes: 'Bath 3', areaSqm: 9.9, status: 'Planning', progress: 10, budget: 6000, hue: 300, notes: 'Guest room layout.' },
   { id: 'junior-master', name: 'Junior Master', includes: 'Junior Master Bath', areaSqm: 11.8, status: 'In progress', progress: 30, budget: 10000, hue: 240, notes: 'Wardrobe drawings approved.' },
   { id: 'yard', name: 'Yard', areaSqm: 3.6, status: 'Not started', progress: 0, budget: 1500, hue: 90, notes: 'Retractable laundry rack.' },
-  { id: 'power-room', name: 'Power Room', areaSqm: 2.1, status: 'Completed', progress: 100, hue: 50, notes: 'DB box access checked.' },
+  { id: 'power-room', name: 'Powder Room', areaSqm: 2.1, status: 'Completed', progress: 100, hue: 50, notes: 'DB box access checked.' },
   { id: 'utility', name: 'Utility', areaSqm: 3.1, status: 'Not started', progress: 0, hue: 150, notes: 'Could become helper room or storage.' },
   { id: 'store', name: 'Store', areaSqm: 2.1, status: 'Completed', progress: 100, hue: 15, notes: 'Shelving installed.' },
 ];
@@ -246,5 +246,6 @@ export const sampleData: AppData = {
   issues: [],
   messages: [],
   notes: [],
+  planMeasures: [],
   tasks,
 };

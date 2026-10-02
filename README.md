@@ -33,6 +33,14 @@ Sections: Home · Notes · Rooms · Floor Plan · Measurements · Photos · Inte
   and amber when they differ; they update as soon as you change a measurement. Tap a room to
   update its width or length right there. Width = left ↔ right on the plan, length = top ↕ bottom.
   A table below lists plan vs measured for every room.
+- **Floor plan ruler** (Floor Plan → Ruler): tap two points to measure a distance in metres (2 decimal
+  places), tap a run of points for a total (**Multi-point**), or the corners of a space for m² (**Area**).
+  Drag any point to adjust it – on a phone a magnifier shows exactly where it is. Lines straighten and
+  snap to walls (both can be switched off). **Calibrate** by drawing over a length you know (a wall you
+  measured, or a printed dimension) and entering its real length; all readings then use the corrected
+  scale. The readout shows roughly how precise a reading is at the current zoom. **Save** keeps a
+  measurement on the plan, and can also add it to a room's measurements, marked "from plan" (the tag
+  disappears once you change it to a size measured on site).
 - **Design files** (Interior Designs → Import designs → a `.json` design file) add ready-made
   designs with their pictures, and optionally your floor plan drawing. They are *added* to what you
   have (nothing is replaced), and importing the same file again updates rather than duplicates.

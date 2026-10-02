@@ -27,6 +27,7 @@ export interface Measurement {
   heightMm?: number; // ceiling height is stored here
   sillMm?: number; // windows: height of the window's bottom edge above the floor
   note?: string;
+  fromPlan?: boolean; // estimated with the floor plan ruler, not measured on site
   /** Shown as a label on a photo. x and y are 0–1 across/down the picture. The photo itself is never changed. */
   pin?: { photoId: string; x: number; y: number };
 }
@@ -282,6 +283,7 @@ export interface Project {
   address: string;
   targetMoveIn: string;
   budgetVersion?: number; // 2 = budget upgrade done (suggested categories added)
+  planCalibration?: number; // floor plan ruler: multiply plan distances by this (1 = plan as drawn)
 }
 
 /** A floor plan drawing stored on the device, with where the plan's origin is and its scale. */
@@ -292,6 +294,15 @@ export interface FloorPlanImage {
   originX: number; // pixel position of the layout's (0, 0) corner
   originY: number;
   pxPerMm: number;
+}
+
+/** A measurement taken with the floor plan ruler. Points are plan coordinates in mm (before calibration). */
+export interface PlanMeasure {
+  id: string;
+  name: string;
+  kind: 'line' | 'path' | 'area';
+  points: [number, number][];
+  createdAt: string;
 }
 
 /** Everything the app stores, in one bundle. */
@@ -311,6 +322,7 @@ export interface AppData {
   issues: Issue[];
   messages: VendorMessage[];
   notes: Note[];
+  planMeasures: PlanMeasure[];
   tasks: Task[];
   floorPlan?: FloorPlanImage;
 }

@@ -32,7 +32,7 @@ export const planRooms: Record<string, PlanRoom> = {
   master: { main: [11284, -183, 2826, 6092], extra: [[11284, 6092, 2826, 2569]], extraNames: ['Master bath'], planMm: [2800, 5950] },
   'junior-master': { main: [-239, 9413, 4220, 2844], extra: [[4018, 9413, 2624, 1688]], extraNames: ['JM bath'], planMm: [4250, 2800] },
   'lift-lobby': { main: [3927, 4807, 1890, 2165], planMm: [1900, 2150] },
-  'power-room': { main: [3927, 7064, 1890, 1101], planMm: [1900, 1100], planName: 'Powder room' },
+  'power-room': { main: [3927, 7064, 1890, 1101], planMm: [1900, 1100] },
   'wet-kitchen': { main: [5908, 8165, 5229, 1743], extra: [[9358, 7248, 1780, 917]], extraNames: ['WC'], planMm: [5250, 1750] },
   store: { main: [9358, 5963, 1780, 1193], planMm: [1800, 1200] },
   yard: { main: [11138, 8807, 3028, 1193], planMm: [3050, 1200] },

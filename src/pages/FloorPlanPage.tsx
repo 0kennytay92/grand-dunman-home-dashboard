@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ArrowRight, Check, Minus, Plus, TriangleAlert } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowRight, Check, Minus, Plus, Ruler, TriangleAlert } from 'lucide-react';
 import { useRoomName, useStore } from '../data/store';
 import { useImageUrl } from '../data/images';
 import { roomSize } from '../data/measurementKinds';
@@ -9,6 +9,8 @@ import { MeasurementEditor } from '../editors/MeasurementEditor';
 import { EditorModal } from '../components/forms';
 import { Card, Chips, PageHeader } from '../components/ui';
 import { tabHref } from './room/tabs';
+import { pathLength } from '../data/ruler';
+import { CalibrateForm, RulerLayer, RulerPanel, SaveMeasureForm, SavedPlanMeasures, initialRuler, useMmPerPx, type RulerState } from './PlanRuler';
 
 const zooms = ['Fit', '1.5×', '2×', '3×'] as const;
 const zoomScale = { Fit: 1, '1.5×': 1.5, '2×': 2, '3×': 3 };
@@ -47,6 +49,14 @@ export function FloorPlanPage() {
   const [showMeasured, setShowMeasured] = useState(true);
   const [showDrawing, setShowDrawing] = useState(true);
   const [openRoom, setOpenRoom] = useState<string | null>(null);
+  // Ruler
+  const [rulerOn, setRulerOn] = useState(false);
+  const [ruler, setRuler] = useState<RulerState>(initialRuler);
+  const [showSaved, setShowSaved] = useState(true);
+  const [selected, setSelected] = useState<string | undefined>();
+  const [rulerModal, setRulerModal] = useState<'save' | 'calibrate' | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const mmPerPx = useMmPerPx(canvasRef);
 
   const fp = data.floorPlan;
   const drawingUrl = useImageUrl(fp?.imageId ?? '', 'full', !!fp);
@@ -63,13 +73,17 @@ export function FloorPlanPage() {
       <PageHeader
         eyebrow="Type 4BR G1 · 179 m²"
         title="Floor Plan"
-        subtitle="Outlines show each room's measured width × length, drawn to scale. Tap a room to update its measurements."
+        subtitle="Outlines show each room's measured width × length, drawn to scale. Tap a room to update its measurements, or use the Ruler to measure anything on the plan."
       />
 
       <div className="toolbar spread">
         <div className="chips">
           <button className={`chip ${showMeasured ? 'chip-active' : ''}`} aria-pressed={showMeasured} onClick={() => setShowMeasured((s) => !s)}>Measured sizes</button>
           {fp && <button className={`chip ${showDrawing ? 'chip-active' : ''}`} aria-pressed={showDrawing} onClick={() => setShowDrawing((s) => !s)}>Plan drawing</button>}
+          {data.planMeasures.length > 0 && <button className={`chip ${showSaved ? 'chip-active' : ''}`} aria-pressed={showSaved} onClick={() => setShowSaved((s) => !s)}>Ruler marks</button>}
+          <button className={`chip ruler-chip ${rulerOn ? 'chip-active' : ''}`} aria-pressed={rulerOn} onClick={() => { setRulerOn((on) => !on); setRuler((r) => ({ ...r, points: [] })); }}>
+            <Ruler size={14} /> Ruler
+          </button>
         </div>
         <div className="zoom">
           <button className="icon-btn" aria-label="Zoom out" disabled={zi === 0} onClick={() => setZoom(zooms[zi - 1])}><Minus size={18} /></button>
@@ -78,8 +92,10 @@ export function FloorPlanPage() {
         </div>
       </div>
 
+      {rulerOn && <RulerPanel st={ruler} set={setRuler} mmPerPx={mmPerPx} onSave={() => setRulerModal('save')} onCalibrate={() => setRulerModal('calibrate')} />}
+
       <div className="fp-scroll">
-        <div className={`fp-canvas ${drawing ? 'with-drawing' : ''}`} style={{ width: `${zoomScale[zoom] * 100}%`, aspectRatio: `${planBounds.w} / ${planBounds.h}` }}>
+        <div ref={canvasRef} className={`fp-canvas ${drawing ? 'with-drawing' : ''} ${rulerOn ? 'ruler-on' : ''}`} style={{ width: `${zoomScale[zoom] * 100}%`, aspectRatio: `${planBounds.w} / ${planBounds.h}` }}>
           <svg className="fp-svg" viewBox={`${planBounds.x} ${planBounds.y} ${planBounds.w} ${planBounds.h}`} aria-hidden>
             {drawing && (
               <image
@@ -127,6 +143,16 @@ export function FloorPlanPage() {
               </span>
             </button>
           ))}
+          <RulerLayer
+            canvasRef={canvasRef}
+            active={rulerOn}
+            st={ruler}
+            set={setRuler}
+            saved={showSaved ? data.planMeasures : []}
+            selected={selected}
+            drawing={fp && drawingUrl ? { url: drawingUrl, fp } : null}
+            mmPerPx={mmPerPx}
+          />
         </div>
       </div>
 
@@ -161,6 +187,10 @@ export function FloorPlanPage() {
         )}
       </Card>
 
+      <SavedPlanMeasures selected={selected} onSelect={(id) => { setSelected(id); if (id) setShowSaved(true); }} />
+
+      {rulerModal === 'save' && <SaveMeasureForm draft={{ kind: ruler.tool, points: ruler.points }} onClose={() => setRulerModal(null)} onSaved={() => setRuler((r) => ({ ...r, points: [] }))} />}
+      {rulerModal === 'calibrate' && <CalibrateForm rawMm={pathLength(ruler.points)} onClose={() => setRulerModal(null)} />}
       {openRoom && <RoomPlanSheet room={data.rooms.find((r) => r.id === openRoom)!} onClose={() => setOpenRoom(null)} />}
     </>
   );
