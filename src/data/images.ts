@@ -170,6 +170,17 @@ function forget(photoId: string) {
   }
 }
 
+/** Shows a placeholder message when a picture hasn't appeared after a while (e.g. still uploading elsewhere). */
+export function useSlow(waiting: boolean, ms = 8000) {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    if (!waiting) return setSlow(false);
+    const t = window.setTimeout(() => setSlow(true), ms);
+    return () => window.clearTimeout(t);
+  }, [waiting, ms]);
+  return slow;
+}
+
 /** Web address for a stored photo, or null while loading / if missing. */
 export function useImageUrl(photoId: string, variant: Variant, enabled = true) {
   const k = key(photoId, variant);
@@ -185,7 +196,7 @@ export function useImageUrl(photoId: string, variant: Variant, enabled = true) {
     let alive = true;
     let timer: number | undefined;
     // A picture added on another device may still be uploading: try again a few times.
-    const waits = [4000, 15000, 45000];
+    const waits = [4000, 15000, 45000, 120000, 300000];
     const attempt = (n: number) => {
       getImage(photoId, variant)
         .then((blob) => {

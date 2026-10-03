@@ -237,6 +237,20 @@ export class SyncEngine {
   // ── Upload ─────────────────────────────────────────────────
 
   private async push() {
+    // Pictures and files go first, so a photo (or document) never arrives on another device
+    // before its picture is online. One failed picture doesn't hold up the rest.
+    let failure: unknown = null;
+    for (const id of [...this.state.uploads]) {
+      try {
+        await this.uploadImage(id);
+        this.state.uploads = this.state.uploads.filter((u) => u !== id);
+        this.save();
+        this.set({});
+      } catch (e) {
+        failure ??= e;
+      }
+    }
+
     const entries = Object.entries(this.state.outbox);
     if (entries.length) {
       const data = this.local.getData();
@@ -254,13 +268,7 @@ export class SyncEngine {
       this.save();
       this.set({});
     }
-
-    for (const id of [...this.state.uploads]) {
-      await this.uploadImage(id);
-      this.state.uploads = this.state.uploads.filter((u) => u !== id);
-      this.save();
-      this.set({});
-    }
+    if (failure) throw failure; // shows "Sync problem" and tries again later
 
     if (this.state.deletes.length) {
       const ids = [...this.state.deletes];

@@ -1422,3 +1422,8 @@ button.list-row.row-button { display: flex; align-items: center; gap: 14px; padd
   background: var(--info-soft); color: var(--info); font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
 }
 .size-tile .from-plan { margin: 4px 0 0; align-self: flex-start; }
+.thumb-wait {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px; text-align: center; font-size: 12.5px; line-height: 1.35; color: var(--ink-3);
+}
+.viewer-wait { color: #d9d3c9; text-align: center; max-width: 420px; padding: 24px; font-size: 15px; line-height: 1.5; }

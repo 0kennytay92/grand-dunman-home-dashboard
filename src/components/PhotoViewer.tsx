@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { ChevronLeft, ChevronRight, Eye, EyeOff, Pencil, Ruler, Trash2, X } from 'lucide-react';
-import { useImageUrl } from '../data/images';
+import { useImageUrl, useSlow } from '../data/images';
 import { useRoomName, useStore } from '../data/store';
 import { labelLines, layoutLabels, type Placement } from '../data/labelLayout';
 import type { Measurement, Photo } from '../data/types';
@@ -31,6 +31,7 @@ export function PhotoViewer({ photos, startId, onClose }: { photos: Photo[]; sta
   const photo = photos[index] as Photo | undefined;
   const thumbUrl = useImageUrl(photo?.id ?? '', 'thumb', !!photo?.hasImage);
   const fullUrl = useImageUrl(photo?.id ?? '', 'full', !!photo?.hasImage);
+  const slowPic = useSlow(!!photo?.hasImage && !(fullUrl ?? thumbUrl));
   const labels = photo ? data.measurements.filter((m) => m.pin?.photoId === photo.id) : [];
 
   // Work out exactly where the picture sits on screen, so labels line up with it.
@@ -148,7 +149,9 @@ export function PhotoViewer({ photos, startId, onClose }: { photos: Photo[]; sta
 
       <div className="viewer-stage" ref={stageRef}>
         {photo.hasImage ? (
-          src && (
+          !src ? (
+            <p className="viewer-wait">{slowPic ? 'This picture isn’t here yet – it may still be uploading from your other device. Open the app on that device and keep it open until it says “Up to date”.' : 'Loading picture…'}</p>
+          ) : (
             <img
               key={photo.id}
               className="viewer-img"
