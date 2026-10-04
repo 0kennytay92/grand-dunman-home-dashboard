@@ -1,5 +1,5 @@
-import { Images } from 'lucide-react';
-import { useImageUrl } from '../data/images';
+import { ImageOff, Images } from 'lucide-react';
+import { useImageUrl, useSlow } from '../data/images';
 import { useRoomName } from '../data/store';
 import type { Design } from '../data/types';
 import { formatDate } from '../format';
@@ -8,8 +8,19 @@ import { Badge, statusTone } from './ui';
 /** The design's render, or its colour swatches when there is no render yet. */
 export function DesignImage({ design, variant = 'thumb', contain = false }: { design: Design; variant?: 'thumb' | 'full'; contain?: boolean }) {
   const url = useImageUrl(design.id, variant, !!design.hasImage);
+  const slow = useSlow(!!design.hasImage && !url);
   if (design.hasImage) {
-    return <div className={`design-img ${contain ? 'contain' : ''}`}>{url && <img src={url} alt={`${design.title} ${design.version}`} draggable={false} />}</div>;
+    return (
+      <div className={`design-img ${contain ? 'contain' : ''}`}>
+        {url ? (
+          <img src={url} alt={`${design.title} ${design.version}`} draggable={false} />
+        ) : (
+          <span className="thumb-wait">
+            {slow ? <><ImageOff size={18} /> Picture not here yet – it may still be uploading from the device it was added on</> : 'Loading picture…'}
+          </span>
+        )}
+      </div>
+    );
   }
   const colours = design.palette?.length ? design.palette : ['#e8e2d8', '#cbbfae', '#8f8171'];
   return (

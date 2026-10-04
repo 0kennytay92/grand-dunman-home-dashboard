@@ -16,7 +16,7 @@ export function PhotoThumb({ photo, label }: { photo: Photo; label?: string }) {
         <img src={url} alt={photo.caption} loading="lazy" draggable={false} />
       ) : (
         <span className="thumb-wait">
-          {slow ? <><ImageOff size={18} /> Picture not here yet – it may still be uploading from your other device</> : 'Loading picture…'}
+          {slow ? <><ImageOff size={18} /> Picture not here yet – it may still be uploading from the device it was taken on</> : 'Loading picture…'}
         </span>
       )}
       {pins > 0 && (

@@ -150,7 +150,7 @@ export function PhotoViewer({ photos, startId, onClose }: { photos: Photo[]; sta
       <div className="viewer-stage" ref={stageRef}>
         {photo.hasImage ? (
           !src ? (
-            <p className="viewer-wait">{slowPic ? 'This picture isn’t here yet – it may still be uploading from your other device. Open the app on that device and keep it open until it says “Up to date”.' : 'Loading picture…'}</p>
+            <p className="viewer-wait">{slowPic ? 'This picture isn’t here yet – it may still be uploading from the device it was taken on. Open the app on that device and keep it open until it says “Up to date”.' : 'Loading picture…'}</p>
           ) : (
             <img
               key={photo.id}
