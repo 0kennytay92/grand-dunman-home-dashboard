@@ -46,3 +46,23 @@ export function imageIdsInUse(data: Pick<AppData, 'photos' | 'designs' | 'floorP
 
 /** Image ids belonging to one design (its render and references). */
 export const designImageIds = (d: Design) => [...(d.hasImage ? [d.id] : []), ...d.referenceIds];
+
+/** What a stored picture/file belongs to, in words (for sync messages), e.g. "Render of “Desk options”". */
+export function describeImage(data: AppData, id: string): string {
+  const photo = data.photos.find((p) => p.id === id);
+  if (photo) return `Photo${photo.caption ? ` “${photo.caption}”` : ''} (${photo.date})`;
+  const design = data.designs.find((d) => d.id === id);
+  if (design) return `Render of “${design.title}” ${design.version}`;
+  const ref = data.designs.find((d) => d.referenceIds.includes(id));
+  if (ref) return `Reference image for “${ref.title}”`;
+  if (data.floorPlan?.imageId === id) return 'Floor plan drawing';
+  const item = data.purchases.find((i) => i.photoIds.includes(id) || i.videoIds?.includes(id) || i.deliveryInspection?.photoIds.includes(id) || i.installationInspection?.photoIds.includes(id));
+  if (item) return `${item.videoIds?.includes(id) ? 'Video' : 'Photo'} of “${item.name}”`;
+  const doc = data.documents.find((d) => d.id === id);
+  if (doc) return `Document “${doc.title}”`;
+  const issue = data.issues.find((x) => x.photoIds.includes(id));
+  if (issue) return `Photo for issue “${issue.title}”`;
+  if (data.messages.some((m) => m.photoIds.includes(id))) return 'Message screenshot';
+  if (data.notes.some((n) => n.photoIds.includes(id))) return 'Note photo';
+  return 'A picture that has since been deleted';
+}

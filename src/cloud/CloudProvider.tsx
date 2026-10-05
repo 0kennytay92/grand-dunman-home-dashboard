@@ -48,6 +48,8 @@ interface Cloud {
   syncNow: () => void;
   /** Compares this device with the online copy and fixes any differences. */
   repairSync: () => Promise<RepairResult>;
+  /** Stop trying to upload one picture/file (it stays on this device). */
+  skipUpload: (id: string) => void;
   clearLinkError: () => void;
 }
 
@@ -302,6 +304,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   );
 
   const syncNow = useCallback(() => void engineRef.current?.syncNow(), []);
+  const skipUpload = useCallback((id: string) => engineRef.current?.skipUpload(id), []);
   const repairSync = useCallback(async () => {
     if (!engineRef.current) throw new Error('Not syncing yet.');
     return engineRef.current.repair();
@@ -333,9 +336,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       removeMember,
       syncNow,
       repairSync,
+      skipUpload,
       clearLinkError,
     }),
-    [ready, session, homes, homeId, sync, recovering, linkError, signIn, signUp, sendPasswordReset, setNewPassword, signOut, createHome, connectHome, refreshHomes, renameHome, listMembers, invite, cancelInvite, removeMember, syncNow, repairSync, clearLinkError],
+    [ready, session, homes, homeId, sync, recovering, linkError, signIn, signUp, sendPasswordReset, setNewPassword, signOut, createHome, connectHome, refreshHomes, renameHome, listMembers, invite, cancelInvite, removeMember, syncNow, repairSync, skipUpload, clearLinkError],
   );
 
   return <CloudContext.Provider value={value}>{children}</CloudContext.Provider>;

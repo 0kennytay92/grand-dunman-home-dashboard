@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { CloudOff, Download, LogOut, Merge, RefreshCw, ShieldCheck, Trash2, UploadCloud, UserPlus } from 'lucide-react';
 import { friendlyError, useCloud, type Member } from '../cloud/CloudProvider';
 import { useStore } from '../data/store';
+import { describeImage } from '../data/designs';
 import { Badge, Card, EmptyState, PageHeader } from '../components/ui';
 import { TextInput } from '../components/forms';
 
@@ -224,7 +225,8 @@ function Connected() {
     <div className="grid-2">
       <Card title="Sync" action={<button className="link" onClick={cloud.syncNow}><RefreshCw size={15} /> Sync now</button>}>
         <SyncLine />
-        {s?.status === 'error' && <p className="field-msg">{s.error}</p>}
+        {s?.status === 'error' && s.error && !Object.keys(s.failed).length && <p className="field-msg">{s.error}</p>}
+        <Waiting />
         <p className="row-sub sync-note">
           Changes you make here upload within seconds; changes from your other devices appear automatically.
         </p>
@@ -306,7 +308,7 @@ export function SyncLine({ compact = false }: { compact?: boolean }) {
   const text =
     sync.status === 'syncing' ? 'Syncing…'
     : sync.status === 'offline' ? `Offline – ${sync.pending ? `${sync.pending} change${sync.pending === 1 ? '' : 's'} will upload later` : 'saved on this device'}`
-    : sync.status === 'error' ? 'Sync problem – tap Sync now'
+    : sync.status === 'error' ? (Object.keys(sync.failed).length ? `Sync problem – ${Object.keys(sync.failed).length} couldn't upload${compact ? '' : ' (details below)'}` : 'Sync problem – tap Sync now')
     : sync.pending ? `${sync.pending} change${sync.pending === 1 ? '' : 's'} uploading…`
     : `Up to date${ago && !compact ? ` · synced ${ago}` : ''}`;
   return (
@@ -373,6 +375,47 @@ function RepairSync() {
           {counts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
         </dl>
       </details>
+    </div>
+  );
+}
+
+/** What's waiting to upload from this device, and anything stuck (with the reason and what to do). */
+function Waiting() {
+  const cloud = useCloud();
+  const { data } = useStore();
+  const s = cloud.sync;
+  const [open, setOpen] = useState(false);
+  if (!s || (!s.records && !s.uploads.length)) return null;
+  const stuck = s.uploads.filter((id) => s.failed[id]);
+  return (
+    <div className={`waiting ${stuck.length ? 'has-stuck' : ''}`}>
+      <button type="button" className="link" onClick={() => setOpen((o) => !o)} aria-expanded={open || stuck.length > 0}>
+        {open || stuck.length ? '▾' : '▸'} Waiting to upload: {[s.records && `${s.records} change${s.records === 1 ? '' : 's'}`, s.uploads.length && `${s.uploads.length} picture${s.uploads.length === 1 ? '' : 's'} / file${s.uploads.length === 1 ? '' : 's'}`].filter(Boolean).join(', ')}
+      </button>
+      {(open || stuck.length > 0) && (
+        <ul className="list waiting-list">
+          {s.uploads.map((id) => (
+            <li key={id} className="list-row wrap">
+              <div className="grow">
+                <p className="row-title">{describeImage(data, id)}</p>
+                <p className={s.failed[id] ? 'field-msg' : 'row-sub'}>{s.failed[id] ?? 'Waiting…'}</p>
+              </div>
+              {s.failed[id] && (
+                <span className="card-actions">
+                  <button className="btn btn-ghost small" onClick={cloud.syncNow}>Try again</button>
+                  <button
+                    className="btn btn-ghost small"
+                    onClick={() => window.confirm('Stop trying to upload this? It stays on this device, but other people won’t see it until you add it again.') && cloud.skipUpload(id)}
+                  >
+                    Skip
+                  </button>
+                </span>
+              )}
+            </li>
+          ))}
+          {s.records > 0 && <li className="list-row"><p className="row-sub">{s.records} other change{s.records === 1 ? '' : 's'} (text and numbers) waiting to upload</p></li>}
+        </ul>
+      )}
     </div>
   );
 }

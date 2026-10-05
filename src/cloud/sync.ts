@@ -26,6 +26,7 @@ interface SyncState {
   deletes: string[]; // pictures and files to delete online
   seen: Record<ItemKey, string>; // item → online timestamp already applied
   lists?: string[]; // the kinds of records this app version understood when it last downloaded
+  failed?: Record<string, string>; // picture id → why its last upload failed
 }
 
 /** What the app understood before the Renovation Budget upgrade. Saved states without `lists` date from then. */
@@ -44,6 +45,20 @@ export interface SyncSnapshot {
   pending: number;
   lastSynced: Date | null;
   error: string | null;
+  records: number; // changes waiting to upload
+  uploads: string[]; // pictures/files waiting to upload
+  failed: Record<string, string>; // pictures/files whose upload failed, and why
+}
+
+/** A plain-English reason for a failed request. */
+export function friendlySyncError(e: unknown): string {
+  const message = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e);
+  if (/unreadable on this device/i.test(message)) return message;
+  if (/exceeded the maximum allowed size|payload too large|413/i.test(message)) return 'The file is too large for the online storage (50 MB limit).';
+  if (/fetch|network|load failed/i.test(message)) {
+    return 'Could not connect to the online storage. If this computer is on a work or school network (or uses a VPN or security software), it may be blocking uploads – try another network such as home Wi-Fi or a phone hotspot.';
+  }
+  return message;
 }
 
 interface LocalSide {
@@ -71,7 +86,7 @@ export class SyncEngine {
   private pullTimer: number | undefined;
   private running = false;
   private busy: Promise<void> = Promise.resolve();
-  private snapshot: SyncSnapshot = { status: 'syncing', pending: 0, lastSynced: null, error: null };
+  private snapshot: SyncSnapshot = { status: 'syncing', pending: 0, lastSynced: null, error: null, records: 0, uploads: [], failed: {} };
   private listeners = new Set<(s: SyncSnapshot) => void>();
 
   constructor(
@@ -121,7 +136,10 @@ export class SyncEngine {
     return () => void this.listeners.delete(fn);
   }
   private set(patch: Partial<SyncSnapshot>) {
-    this.snapshot = { ...this.snapshot, ...patch, pending: this.pendingCount() };
+    this.snapshot = {
+      ...this.snapshot, ...patch, pending: this.pendingCount(),
+      records: Object.keys(this.state.outbox).length, uploads: [...this.state.uploads], failed: { ...(this.state.failed ?? {}) },
+    };
     this.listeners.forEach((fn) => fn(this.snapshot));
   }
   private pendingCount() {
@@ -227,11 +245,22 @@ export class SyncEngine {
     }
   }
   private fail(e: unknown) {
+    // Only call it "offline" when the device itself says it has no connection. Anything else
+    // (e.g. a network that blocks uploads) is shown as a sync problem, with the reason.
     const offline = typeof navigator !== 'undefined' && !navigator.onLine;
-    const message = e instanceof Error ? e.message : typeof e === 'object' && e && 'message' in e ? String((e as { message: unknown }).message) : String(e);
-    const looksOffline = offline || /fetch|network|load failed/i.test(message);
-    this.set({ status: looksOffline ? 'offline' : 'error', error: looksOffline ? null : message });
-    if (this.running) this.schedulePush(looksOffline ? 15_000 : 30_000); // try again later
+    const stuck = Object.keys(this.state.failed ?? {}).length;
+    const error = offline ? null : stuck ? `${stuck} picture${stuck === 1 ? '' : 's'} or file${stuck === 1 ? '' : 's'} couldn't upload.` : friendlySyncError(e);
+    this.set({ status: offline ? 'offline' : 'error', error });
+    if (this.running) this.schedulePush(offline ? 15_000 : 30_000); // try again later
+  }
+
+  /** Stops trying to upload a picture/file (it stays on this device only). */
+  skipUpload(id: string) {
+    this.state.uploads = this.state.uploads.filter((u) => u !== id);
+    if (this.state.failed) delete this.state.failed[id];
+    this.save();
+    this.set({ status: Object.keys(this.state.failed ?? {}).length ? this.snapshot.status : 'synced', error: null });
+    this.schedulePush(0);
   }
 
   // ── Upload ─────────────────────────────────────────────────
@@ -244,10 +273,13 @@ export class SyncEngine {
       try {
         await this.uploadImage(id);
         this.state.uploads = this.state.uploads.filter((u) => u !== id);
+        if (this.state.failed) delete this.state.failed[id];
         this.save();
         this.set({});
       } catch (e) {
         failure ??= e;
+        this.state.failed = { ...(this.state.failed ?? {}), [id]: friendlySyncError(e) };
+        this.save();
       }
     }
 
@@ -283,8 +315,15 @@ export class SyncEngine {
 
   private async uploadImage(id: string) {
     for (const variant of ['thumb', 'full', 'original'] as Variant[]) {
-      const blob = await getLocalImage(id, variant);
-      if (!blob) continue; // not stored (e.g. deleted, or a file without this version) – nothing to upload
+      const stored = await getLocalImage(id, variant);
+      if (!stored) continue; // not stored (e.g. deleted, or a file without this version) – nothing to upload
+      // Read the file first: a stored file the browser has lost can't be sent (and retrying won't help).
+      let blob: Blob;
+      try {
+        blob = new Blob([await stored.arrayBuffer()], { type: stored.type });
+      } catch {
+        throw new Error('This picture is unreadable on this device (the browser may have cleared it). Delete it here and add it again.');
+      }
       const { error } = await this.client.storage
         .from(IMAGE_BUCKET)
         .upload(imagePath(this.homeId, id, variant), blob, { upsert: true, contentType: blob.type || (variant === 'original' ? 'application/octet-stream' : 'image/jpeg') });
@@ -344,7 +383,9 @@ export class SyncEngine {
   async repair(): Promise<RepairResult> {
     const job = this.busy.then(async (): Promise<RepairResult> => {
       this.set({ status: 'syncing' });
-      await this.push();
+      // A picture that won't upload mustn't stop the check; it's reported at the end.
+      let pushFailure: unknown = null;
+      await this.push().catch((e) => { pushFailure ??= e; });
       const rows = await this.fetchAll();
       const data = this.local.getData();
       const online = new Set<string>();
@@ -393,8 +434,9 @@ export class SyncEngine {
         }
       }
       this.save();
-      await this.push();
-      this.set({ status: 'synced', lastSynced: new Date(), error: null });
+      await this.push().catch((e) => { pushFailure ??= e; });
+      if (pushFailure) this.fail(pushFailure);
+      else this.set({ status: 'synced', lastSynced: new Date(), error: null });
       return { checked: rows.length, downloaded, removed, uploaded: onlyHere.length, picturesUploaded };
     });
     this.busy = job.then(() => {}, (e) => this.fail(e)); // keep the queue going either way
