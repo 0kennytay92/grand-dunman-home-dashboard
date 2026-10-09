@@ -36,7 +36,7 @@ export function SettingsPage() {
   };
 
   const saveProject = () => {
-    updateProject({ name: name.trim() || 'Grand Dunman Home', address: address.trim(), targetMoveIn: moveIn || data.project.targetMoveIn });
+    updateProject({ ...data.project, name: name.trim() || 'Grand Dunman Home', address: address.trim(), targetMoveIn: moveIn || data.project.targetMoveIn });
     notify('Home details saved');
   };
 

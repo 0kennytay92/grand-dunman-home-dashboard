@@ -9,6 +9,9 @@ Sections: Home · Notes · Rooms · Floor Plan · Measurements · Photos · Inte
 
 - **Add, edit and delete** rooms, measurements, budget items, vendors, payments, categories, designs and tasks.
   Look for the **+ Add** buttons; tap any item to edit or delete it.
+- **Home cover photo**: tap **Add cover photo** at the top of the Home page to upload photos or pick up to 4
+  of your existing ones. Wide screens show two side by side; phones show one at a time. Cover photos are
+  normal (private) photos, so they sync like any other photo and are never part of this code.
 - **Open any room** to see its own page with five tabs:
   - **Overview**: floor area, size, ceiling height, budget, notes, tasks and latest photos
   - **Photos**: that room's photos; add new ones straight into the room

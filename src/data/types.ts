@@ -284,6 +284,7 @@ export interface Project {
   targetMoveIn: string;
   budgetVersion?: number; // 2 = budget upgrade done (suggested categories added)
   planCalibration?: number; // floor plan ruler: multiply plan distances by this (1 = plan as drawn)
+  coverPhotoIds?: string[]; // photos shown at the top of the Home page, in order
 }
 
 /** A floor plan drawing stored on the device, with where the plan's origin is and its scale. */

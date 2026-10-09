@@ -12,7 +12,7 @@ let lastTag: PhotoTag = 'Existing Condition';
  * Wraps an "Add Photo" button. Tapping it opens the phone's
  * Take Photo / Photo Library picker, then a short form to label the photos.
  */
-export function PhotoAdder({ roomId, children }: { roomId?: string; children: (open: () => void) => ReactNode }) {
+export function PhotoAdder({ roomId, onSaved, children }: { roomId?: string; onSaved?: (ids: string[]) => void; children: (open: () => void) => ReactNode }) {
   const input = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
 
@@ -30,12 +30,12 @@ export function PhotoAdder({ roomId, children }: { roomId?: string; children: (o
           e.target.value = '';
         }}
       />
-      {files.length > 0 && <PhotoUploadForm files={files} roomId={roomId} onClose={() => setFiles([])} />}
+      {files.length > 0 && <PhotoUploadForm files={files} roomId={roomId} onSaved={onSaved} onClose={() => setFiles([])} />}
     </>
   );
 }
 
-function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: string; onClose: () => void }) {
+function PhotoUploadForm({ files, roomId, onSaved, onClose }: { files: File[]; roomId?: string; onSaved?: (ids: string[]) => void; onClose: () => void }) {
   const { data, upsert, notify } = useStore();
   const roomName = useRoomName();
   const [room, setRoom] = useState(roomId ?? data.rooms[0]?.id ?? '');
@@ -62,6 +62,7 @@ function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: s
     lastTag = tag;
     requestPersistentStorage();
     let saved = 0;
+    const ids: string[] = [];
     const failed: string[] = [];
     for (const [i, file] of files.entries()) {
       setProgress(i + 1);
@@ -71,6 +72,7 @@ function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: s
         await putImages(id, full, thumb);
         upsert('photos', { id, roomId: room, tag, caption: caption.trim(), date: date || todayIso(), hasImage: true });
         saved++;
+        ids.push(id);
       } catch {
         failed.push(file.name);
       }
@@ -80,6 +82,7 @@ function PhotoUploadForm({ files, roomId, onClose }: { files: File[]; roomId?: s
       setError(`${failed.length} photo${failed.length > 1 ? 's' : ''} could not be saved (${failed.join(', ')}). The file may not be a photo, or the device may be out of space.`);
       if (!saved) return;
     }
+    onSaved?.(ids);
     notify(saved === 1 ? 'Photo added' : `${saved} photos added`);
     if (!failed.length) onClose();
   };

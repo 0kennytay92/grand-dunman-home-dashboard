@@ -7,6 +7,7 @@ import { href } from '../router';
 import { navItems } from '../components/Layout';
 import { TaskList } from '../components/TaskList';
 import { PhotoThumb } from '../components/PhotoThumb';
+import { CoverPicker, HomeCover, useCoverPhotos } from '../components/HomeCover';
 import { DesignImage } from '../components/DesignCard';
 import { designHref } from './designs/links';
 import { TaskEditor } from '../editors/TaskEditor';
@@ -35,12 +36,15 @@ export function HomePage() {
   const itemName = (id?: string) => data.purchases.find((i) => i.id === id)?.name;
   const vendorName = (id?: string) => data.vendors.find((v) => v.id === id)?.name;
   const moveInDays = daysUntil(project.targetMoveIn);
+  const cover = useCoverPhotos();
   const latestPhotos = [...data.photos].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
 
   return (
     <>
-      <section className="hero">
-        <div>
+      <section className={`hero${cover.length ? ' has-cover' : ''}`}>
+        <CoverPicker />
+        <HomeCover photos={cover} />
+        <div className="hero-text">
           <p className="eyebrow">Welcome home</p>
           <h1>{project.name}</h1>
           <p className="hero-sub">Renovation in progress · target move-in {formatDate(project.targetMoveIn)}</p>
